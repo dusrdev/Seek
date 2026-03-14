@@ -46,7 +46,7 @@
     <AssemblyOriginatorKeyFile>$(StrongNameKeyPath)</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(StrongNameKeyPath)' == ''">
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Seek.Cli.Tests</_Parameter1>
     </AssemblyAttribute>
