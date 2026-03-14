@@ -1,0 +1,68 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Seek</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TrimMode>full</TrimMode>
+    <LangVersion>preview</LangVersion>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <AnalysisMode>All</AnalysisMode>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AotCompatible>true</AotCompatible>
+    <DebuggerSupport>false</DebuggerSupport>
+    <DeterministicBuild>true</DeterministicBuild>
+    <EventSourceSupport>false</EventSourceSupport>
+    <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <Version>1.0.0</Version>
+    <StripSymbols>true</StripSymbols>
+    <RepositoryUrl>https://github.com/dusrdev/Seek</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>CA1031;CA2007;CA2208</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>David Shnayder</Authors>
+    <Description>A very fast filesystem searcher</Description>
+    <PackageTags>find, search, filesystem, fd</PackageTags>
+    <PackageIcon>seek-icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageId>Seek</PackageId>
+    <PackAsTool>true</PackAsTool>
+    <PackageOutputPath>../.././nupkg</PackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(StrongNameKeyPath)' != ''">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(StrongNameKeyPath)</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Seek.Cli.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Seek.Core\Seek.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\assets\seek-icon.png" Pack="true" PackagePath="seek-icon.png" />
+    <PackageReference Include="ConsoleAppFramework" Version="5.7.13">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="PrettyConsole" Version="5.4.2" />
+  </ItemGroup>
+</Project>

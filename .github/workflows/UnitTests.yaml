@@ -1,0 +1,72 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CORE_TEST_PROJECT: tests/Seek.Core.Tests/Seek.Core.Tests.csproj
+  CORE_TEST_ARTIFACTS: artifacts/seek-core-tests
+  CORE_TEST_RUNNER: artifacts/seek-core-tests/Seek.Core.Tests
+  CLI_TEST_PROJECT: tests/Seek.Cli.Tests/Seek.Cli.Tests.csproj
+  CLI_TEST_ARTIFACTS: artifacts/seek-cli-tests
+  CLI_TEST_RUNNER: artifacts/seek-cli-tests/Seek.Cli.Tests
+
+jobs:
+  unit-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish native AOT core test runner
+        shell: bash
+        run: |
+          dotnet publish ${{ env.CORE_TEST_PROJECT }} \
+            -c Release \
+            --nologo \
+            -p:ContinuousIntegrationBuild=true \
+            -o "${{ env.CORE_TEST_ARTIFACTS }}"
+
+      - name: Run published core tests
+        shell: bash
+        run: |
+          exe="${{ env.CORE_TEST_RUNNER }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            exe="$exe.exe"
+          fi
+
+          "$exe"
+
+      - name: Publish native AOT CLI test runner
+        shell: bash
+        run: |
+          dotnet publish ${{ env.CLI_TEST_PROJECT }} \
+            -c Release \
+            --nologo \
+            -p:ContinuousIntegrationBuild=true \
+            -o "${{ env.CLI_TEST_ARTIFACTS }}"
+
+      - name: Run published CLI tests
+        shell: bash
+        run: |
+          exe="${{ env.CLI_TEST_RUNNER }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            exe="$exe.exe"
+          fi
+
+          "$exe"

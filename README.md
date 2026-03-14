@@ -1,0 +1,116 @@
+# Seek
+
+Seek is a cross-platform command-line file searcher built as a faster alternative to `find`.
+
+It uses a concurrent worklist algorithm that is orders of magnitude faster than conventional file-tree walks. There are no indexes. No daemons. No warm-up ritual. Just point it at a directory and let it rip.
+
+## Why Seek
+
+- Searches full paths, not just filenames.
+- Supports both plain substring search and regex.
+- Works well for source trees, logs, monorepos, and large developer workspaces.
+- Ships as a clean `.NET` global tool.
+
+Seek is for developers, power users, and anyone tired of waiting on filesystem search.
+
+## Benchmark
+
+A real-world full-path regex benchmark for mp4 paths under the root directory showed Seek running 2.5-3.5x faster than rust-based [fd](https://github.com/sharkdp/fd):
+
+![Seek benchmark against fd](assets/benchmarks.png)
+
+## Tech Stack
+
+- C# on .NET 10
+- Console UI by [PrettyConsole](https://github.com/dusrdev/PrettyConsole/)
+- CLI and argument parsing by [ConsoleAppFramework](https://github.com/Cysharp/ConsoleAppFramework)
+
+## Install
+
+From NuGet:
+
+```bash
+dotnet tool install --global Seek
+```
+
+Precompiled binaries are also available in GitHub Releases.
+
+## Agent Skill
+
+This repo includes a reusable agent skill for path search with `seek`:
+
+- Skill path: `.agents/skills/seek-file-search`
+
+The bundled metadata is directly usable by Codex and other agents that understand the same skill layout. For agents that use a different schema, the skill content can still be copied and adapted.
+
+To install it into a global skills folder, copy that directory into your agent skills directory, for example:
+
+```bash
+cp -R .agents/skills/seek-file-search ~/.agents/skills/seek-file-search
+```
+
+The skill guides agents to prefer `seek` for filesystem path lookup instead of `find`, `fd`, or `ls | grep`, and to use `rg` only for file-content search. Cursor, Claude, and other agents with different skill formats will require user-side customization for now.
+
+## Usage
+
+The positional argument is the search query.
+
+Search from the current directory:
+
+```bash
+seek report
+```
+
+Search from a specific root:
+
+```bash
+seek report --root /path/to/root
+```
+
+Regex search:
+
+```bash
+seek ".*\\.cs$" --regex
+```
+
+Only files:
+
+```bash
+seek report --files
+```
+
+Only directories:
+
+```bash
+seek report --directories
+```
+
+Short flags:
+
+```bash
+seek report -f
+seek report -d
+```
+
+Machine-readable output for piping:
+
+```bash
+seek report --null | xargs -0 rm
+```
+
+Other useful options:
+
+- `--case-sensitive`
+- `-f, --files` to emit only file matches
+- `-d, --directories` to emit only directory matches
+- `--plain` for plain paths without ANSI escape sequences
+- `--null` for NUL-terminated plain paths that are safe to pipe into tools like `xargs -0`
+- `-h, --hidden` to include hidden files
+- `-s, --system` to include system files
+- `--highlight-color Yellow`
+
+## Build From Source
+
+```bash
+dotnet build Seek.slnx
+```

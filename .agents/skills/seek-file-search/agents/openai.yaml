@@ -1,0 +1,7 @@
+interface:
+  display_name: "Seek File Search"
+  short_description: "Use seek for fast filesystem path lookup."
+  default_prompt: "Use $seek-file-search to locate files or directories by path pattern with seek instead of find or ls piped to grep."
+
+policy:
+  allow_implicit_invocation: true

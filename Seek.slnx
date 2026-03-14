@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Seek.Cli/Seek.Cli.csproj" />
+    <Project Path="src/Seek.Core/Seek.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Seek.Cli.Tests/Seek.Cli.Tests.csproj" />
+    <Project Path="tests/Seek.Core.Tests/Seek.Core.Tests.csproj" />
+  </Folder>
+</Solution>
