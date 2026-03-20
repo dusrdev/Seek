@@ -117,6 +117,18 @@ seek report --null | xargs -0 rm
 
 `--null` always emits plain absolute paths terminated by `\0`, so it is safe for piping even when names contain spaces or newlines.
 
+Built-in delete command:
+
+```bash
+seek delete report
+seek delete report --apply
+seek delete ".*\\.tmp$" --regex --apply
+```
+
+`seek delete` uses the same search-selection options as the default search command: `--regex`, `--case-sensitive`, `--hidden`, `--system`, `--files`, `--directories`, and `--root`.
+
+Without `--apply`, `seek delete` prints the final candidate list and a `No changes were made...` hint. With `--apply`, it deletes each candidate sequentially and prints a `SUCCESS` or `FAIL` status line for each path.
+
 Other useful options:
 
 - `--case-sensitive`
@@ -125,6 +137,7 @@ Other useful options:
 - `-d, --directories` to emit only directory matches
 - `--plain` for plain paths without ANSI escape sequences
 - `--null` for NUL-terminated absolute paths that are safe to pipe into tools like `xargs -0`
+- `seek delete ... --apply` for built-in deletion after preview
 - `-h, --hidden` to include hidden files
 - `-s, --system` to include system files
 - `--highlight-color Yellow`
