@@ -15,11 +15,26 @@ env:
   NUGET_SOURCE: https://api.nuget.org/v3/index.json
 
 jobs:
-  nuget:
+  metadata:
     runs-on: ubuntu-latest
 
     outputs:
       version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          version="$(grep -oPm1 '(?<=<Version>)[^<]+' "${{ env.CLI_PROJECT }}")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  nuget-base:
+    needs: metadata
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -58,17 +73,10 @@ jobs:
           printf '%s' "$SNK" | base64 --decode > "$key_path"
           echo "STRONG_NAME_KEY_PATH=$key_path" >> "$GITHUB_ENV"
 
-      - name: Extract version
-        id: version
-        shell: bash
-        run: |
-          version="$(grep -oPm1 '(?<=<Version>)[^<]+' "${{ env.CLI_PROJECT }}")"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
       - name: Restore
         run: dotnet restore ${{ env.CLI_PROJECT }}
 
-      - name: Pack tool package
+      - name: Pack top-level tool package
         shell: bash
         run: |
           dotnet pack ${{ env.CLI_PROJECT }} \
@@ -76,24 +84,147 @@ jobs:
             --no-restore \
             --nologo \
             -p:ContinuousIntegrationBuild=true \
+            -p:CreateRidSpecificToolPackages=false \
             -p:StrongNameKeyPath="$STRONG_NAME_KEY_PATH" \
+            -p:PublishAot=false \
+            -o artifacts/nuget
+
+      - name: Restore fallback tool package assets
+        run: dotnet restore ${{ env.CLI_PROJECT }} -r any
+
+      - name: Pack framework-dependent fallback tool package (any)
+        shell: bash
+        run: |
+          dotnet pack ${{ env.CLI_PROJECT }} \
+            -c Release \
+            --no-restore \
+            --nologo \
+            -r any \
+            -p:ContinuousIntegrationBuild=true \
+            -p:StrongNameKeyPath="$STRONG_NAME_KEY_PATH" \
+            -p:PublishAot=false \
             -o artifacts/nuget
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: nuget-packages
+          name: nuget-packages-base
           path: artifacts/nuget/*
           if-no-files-found: error
 
-      - name: Push package to NuGet.org
+  nuget-rid:
+    needs: metadata
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: windows-latest
+            rid: win-arm64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+          - os: macos-latest
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate signing secret
+        shell: bash
+        env:
+          SNK: ${{ secrets.SNK }}
+        run: |
+          if [ -z "$SNK" ]; then
+            echo "Missing required secret: SNK" >&2
+            exit 1
+          fi
+
+      - name: Materialize strong-name key
+        shell: bash
+        env:
+          SNK: ${{ secrets.SNK }}
+        run: |
+          key_path="$RUNNER_TEMP/Seek.snk"
+          printf '%s' "$SNK" | base64 --decode > "$key_path"
+          echo "STRONG_NAME_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Restore
+        run: dotnet restore ${{ env.CLI_PROJECT }} -r ${{ matrix.rid }}
+
+      - name: Pack RID-specific AOT tool package
+        shell: bash
+        run: |
+          dotnet pack ${{ env.CLI_PROJECT }} \
+            -c Release \
+            --no-restore \
+            --nologo \
+            -r ${{ matrix.rid }} \
+            -p:ContinuousIntegrationBuild=true \
+            -p:StrongNameKeyPath="$STRONG_NAME_KEY_PATH" \
+            -p:PublishAot=true \
+            -o artifacts/nuget
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: nuget-package-${{ matrix.rid }}
+          path: artifacts/nuget/*
+          if-no-files-found: error
+
+  nuget-publish:
+    needs:
+      - metadata
+      - nuget-base
+      - nuget-rid
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download base package artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: nuget-packages-base
+          path: artifacts/nuget
+
+      - name: Download RID package artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: nuget-package-*
+          path: artifacts/nuget-rid
+          merge-multiple: true
+
+      - name: Flatten package artifacts
+        shell: bash
+        run: |
+          mkdir -p artifacts/all-packages
+          find artifacts/nuget -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -exec cp {} artifacts/all-packages/ \;
+          find artifacts/nuget-rid -type f \( -name '*.nupkg' -o -name '*.snupkg' \) -exec cp {} artifacts/all-packages/ \;
+
+      - name: Push packages to NuGet.org
         shell: bash
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           shopt -s nullglob
 
-          for package in artifacts/nuget/*.nupkg; do
+          for package in artifacts/all-packages/*.nupkg; do
             file_name="$(basename "$package")"
             if [[ "$file_name" == *.snupkg ]]; then
               continue
@@ -105,25 +236,8 @@ jobs:
               --skip-duplicate
           done
 
-      - name: Create or update GitHub release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          tag="${{ steps.version.outputs.version }}"
-
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" \
-              --title "Release $tag" \
-              --notes-file CHANGELOG.md
-          else
-            gh release create "$tag" \
-              --title "Release $tag" \
-              --notes-file CHANGELOG.md
-          fi
-
   binaries:
-    needs: nuget
+    needs: metadata
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -136,21 +250,19 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            arch: x86
+            rid: win-x86
           - os: windows-latest
-            arch: x64
+            rid: win-x64
           - os: windows-latest
-            arch: arm64
+            rid: win-arm64
           - os: ubuntu-latest
-            arch: x86
+            rid: linux-x64
           - os: ubuntu-latest
-            arch: x64
-          - os: ubuntu-latest
-            arch: arm64
+            rid: linux-arm64
           - os: macos-latest
-            arch: x64
+            rid: osx-x64
           - os: macos-latest
-            arch: arm64
+            rid: osx-arm64
 
     steps:
       - name: Checkout
@@ -165,7 +277,7 @@ jobs:
         uses: sigstore/cosign-installer@v4.0.0
 
       - name: Restore
-        run: dotnet restore ${{ env.CLI_PROJECT }} --use-current-runtime
+        run: dotnet restore ${{ env.CLI_PROJECT }} -r ${{ matrix.rid }}
 
       - name: Validate signing secret
         shell: bash
@@ -193,6 +305,7 @@ jobs:
             -c Release \
             --no-restore \
             --nologo \
+            -r ${{ matrix.rid }} \
             -p:ContinuousIntegrationBuild=true \
             -p:StrongNameKeyPath="$STRONG_NAME_KEY_PATH" \
             -o publish
@@ -202,50 +315,81 @@ jobs:
         shell: bash
         run: |
           cd publish
-          zip -r "../seek-${{ matrix.os }}-${{ matrix.arch }}.zip" Seek
+          zip -r "../seek-${{ matrix.rid }}.zip" Seek
 
       - name: Package binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "publish\Seek.exe" -DestinationPath "seek-${{ matrix.os }}-${{ matrix.arch }}.zip"
+          Compress-Archive -Path "publish\Seek.exe" -DestinationPath "seek-${{ matrix.rid }}.zip"
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
-          subject-path: seek-${{ matrix.os }}-${{ matrix.arch }}.zip
+          subject-path: seek-${{ matrix.rid }}.zip
 
       - name: Sigstore sign release zip
         shell: bash
         run: |
           cosign sign-blob --yes \
-            --bundle "seek-${{ matrix.os }}-${{ matrix.arch }}.zip.sigstore.json" \
-            "seek-${{ matrix.os }}-${{ matrix.arch }}.zip"
+            --bundle "seek-${{ matrix.rid }}.zip.sigstore.json" \
+            "seek-${{ matrix.rid }}.zip"
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v6
         with:
-          name: seek-${{ matrix.os }}-${{ matrix.arch }}.zip
-          path: seek-${{ matrix.os }}-${{ matrix.arch }}.zip
+          name: seek-${{ matrix.rid }}.zip
+          path: seek-${{ matrix.rid }}.zip
           if-no-files-found: error
 
       - name: Upload Sigstore bundle artifact
         uses: actions/upload-artifact@v6
         with:
-          name: seek-${{ matrix.os }}-${{ matrix.arch }}.zip.sigstore.json
-          path: seek-${{ matrix.os }}-${{ matrix.arch }}.zip.sigstore.json
+          name: seek-${{ matrix.rid }}.zip.sigstore.json
+          path: seek-${{ matrix.rid }}.zip.sigstore.json
           if-no-files-found: error
 
-      - name: Upload binary to GitHub release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ needs.nuget.outputs.version }}" "seek-${{ matrix.os }}-${{ matrix.arch }}.zip" --clobber
+  github-release:
+    needs:
+      - metadata
+      - binaries
+    runs-on: ubuntu-latest
 
-      - name: Upload Sigstore bundle to GitHub release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: seek-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Create or update GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ needs.nuget.outputs.version }}" "seek-${{ matrix.os }}-${{ matrix.arch }}.zip.sigstore.json" --clobber
+          tag="${{ needs.metadata.outputs.version }}"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" \
+              --title "Release $tag" \
+              --notes-file CHANGELOG.md
+          else
+            gh release create "$tag" \
+              --title "Release $tag" \
+              --notes-file CHANGELOG.md
+          fi
+
+      - name: Upload binaries to GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+
+          for file in release-artifacts/*; do
+            gh release upload "${{ needs.metadata.outputs.version }}" "$file" --clobber
+          done

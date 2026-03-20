@@ -33,6 +33,8 @@ From NuGet:
 dotnet tool install --global Seek
 ```
 
+On supported runtimes, NuGet will resolve Seek's native AOT runtime package for the current machine automatically. A framework-dependent `Seek.any` fallback package is also published for unsupported or generic environments.
+
 Precompiled binaries are also available in GitHub Releases.
 
 ## Agent Skill
