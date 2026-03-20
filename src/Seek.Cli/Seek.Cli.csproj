@@ -9,14 +9,13 @@
     <TrimMode>full</TrimMode>
     <LangVersion>preview</LangVersion>
     <OptimizationPreference>Speed</OptimizationPreference>
-    <ServerGarbageCollection>false</ServerGarbageCollection>
-    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <AnalysisMode>All</AnalysisMode>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishAot>true</PublishAot>
     <PublishTrimmed>true</PublishTrimmed>
     <IsAotCompatible>true</IsAotCompatible>
     <AotCompatible>true</AotCompatible>
+    <VerifyReferenceAotCompatibility>true</VerifyReferenceAotCompatibility>
     <DebuggerSupport>false</DebuggerSupport>
     <DeterministicBuild>true</DeterministicBuild>
     <EventSourceSupport>false</EventSourceSupport>
@@ -28,7 +27,7 @@
     <RepositoryUrl>https://github.com/dusrdev/Seek</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>CA1031;CA2007;CA2208</NoWarn>
+    <NoWarn>CA1031;CA2007;CA2208;NU5119</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -40,6 +39,9 @@
     <PackageId>Seek</PackageId>
     <PackAsTool>true</PackAsTool>
     <PackageOutputPath>../.././nupkg</PackageOutputPath>
+    <ToolPackageRuntimeIdentifiers>
+      win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64;any
+    </ToolPackageRuntimeIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(StrongNameKeyPath)' != ''">
