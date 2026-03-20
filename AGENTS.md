@@ -122,15 +122,24 @@
 
 - `src/Seek.Cli/Seek.Cli.csproj` is the source of package metadata for the tool package.
 - The package is packed as a .NET tool via `PackAsTool=true`.
+- The CLI package pins `.NET 10.0.0` via `RuntimeFrameworkVersion`; `src/Seek.Core/Seek.Core.csproj` does the same.
+- AOT compatibility is enforced in project metadata via `IsAotCompatible` and `VerifyReferenceAotCompatibility`.
 - Optional strong-name signing for the CLI assembly is enabled by passing `StrongNameKeyPath` at build or pack time.
 - Package identity is `Seek`.
+- Tool packages are published for `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `any` via `ToolPackageRuntimeIdentifiers`.
 - The package embeds:
   - the repository `README.md` as package readme
   - `assets/seek-icon.png` as package icon, packed to `seek-icon.png`
 - `DotnetToolSettings.xml` is generated into the `.nupkg` by the SDK during packing.
 - `ConsoleApp.Version` in `src/Seek.Cli/Program.cs` is expected to match the project `<Version>` in `src/Seek.Cli/Seek.Cli.csproj`.
 - The release workflow materializes a base64-encoded `SNK` GitHub secret into a temporary `.snk` file and passes it as `StrongNameKeyPath`.
-- The binary release workflow emits GitHub build attestations and Sigstore bundles for each zipped release artifact.
+- The release workflow extracts the version once in a `metadata` job and reuses it across NuGet and GitHub release jobs.
+- The NuGet release flow publishes:
+  - a top-level tool package with `CreateRidSpecificToolPackages=false`
+  - a framework-dependent fallback tool package for RID `any`
+  - RID-specific native AOT tool packages for supported runtimes
+- The binary release workflow publishes zipped native binaries for `win-x86`, `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`.
+- The binary release workflow emits GitHub build attestations and Sigstore bundles for each zipped release artifact, and uploads them through the `github-release` job.
 
 ## Change expectations
 
