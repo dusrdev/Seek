@@ -95,7 +95,7 @@ internal sealed class ContainsMatcher : IMatcher {
 	}
 }
 
-internal sealed record SearchMatch(string Path, Sections Sections);
+internal sealed record SearchMatch(string Path, int RelativePathOffset, Sections Sections);
 
 internal sealed class Sections : List<MatchRanges> {
 	public static readonly Sections None = new(0);
