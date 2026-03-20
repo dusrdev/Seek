@@ -59,7 +59,7 @@ internal sealed class FileSystemSearch {
         }
 
         for (int i = 0; i < Workers; i++) {
-            _ = Task.Run(RunWriterAsync, _cancellationToken)
+            _ = Task.Run(RunWorkerAsync, _cancellationToken)
                     .ContinueWith(static (task, state) => {
                         HandleError(task, state);
                     }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -74,13 +74,13 @@ internal sealed class FileSystemSearch {
         return _matches.Reader.ReadAllAsync(_cancellationToken);
     }
 
-    private async Task RunWriterAsync() {
+    private async Task RunWorkerAsync() {
         while (await _processor.Reader.WaitToReadAsync(_cancellationToken)) {
             while (_processor.Reader.TryRead(out var searchEntry)) {
                 var relativeSearchEntry = searchEntry.AsSpan(_relativePathOffset);
 
                 if (_matchDirectories && _matcher.TryFindMatches(relativeSearchEntry, out var match)) {
-                    _matches.Writer.TryWrite(new SearchMatch(searchEntry, _relativePathOffset, match));
+                    _matches.Writer.TryWrite(new SearchMatch(searchEntry, _relativePathOffset, match, true));
                 }
 
                 EnumerateExceptCurrentRoot(searchEntry);
@@ -133,7 +133,7 @@ internal sealed class FileSystemSearch {
             entry.FileName.CopyTo(fullPath.Slice(entry.Directory.Length + 1));
             ReadOnlySpan<char> relativePath = fullPath.Slice(_relativePathOffset);
             if (_matcher.TryFindMatches(relativePath, out var match)) {
-                _matches.Writer.TryWrite(new SearchMatch(new string(fullPath), _relativePathOffset, match));
+                _matches.Writer.TryWrite(new SearchMatch(new string(fullPath), _relativePathOffset, match, false));
             }
             return false;
         }

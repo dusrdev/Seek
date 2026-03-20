@@ -38,20 +38,16 @@ internal static partial class Commands {
 		string root = ".",
 		ConsoleColor highlightColor = ConsoleColor.Green,
 		CancellationToken cancellationToken = default) {
-		SearchType type = (files, directories) switch {
-			(true, false) => SearchType.Files,
-			(false, true) => SearchType.Directories,
-			_ => SearchType.FilesAndDirectories
-		};
-
-		var search = new FileSystemSearch(new SearchOptions {
-			Query = query,
-			Root = root,
-			Regex = regex,
-			CaseSensitive = caseSensitive,
-			AttributesToSkip = GetAttributesToSkip(hidden, system),
-			SearchType = type
-		}, cancellationToken);
+		var search = CreateFileSystemSearch(
+			query,
+			regex,
+			caseSensitive,
+			hidden,
+			system,
+			files,
+			directories,
+			root,
+			cancellationToken);
 
 		Action<SearchMatch, bool, ConsoleColor> outputHandler = (@null, plain) switch {
 			(true, _) => WritePlainNullTerminated,
@@ -96,19 +92,5 @@ internal static partial class Commands {
 		var path = searchMatch.Path.AsSpan();
 
 		Console.WriteInterpolated($"{path}\0");
-	}
-
-	private static FileAttributes GetAttributesToSkip(bool hidden, bool system) {
-		FileAttributes attributesToSkip = FileAttributes.ReparsePoint;
-
-		if (!hidden) {
-			attributesToSkip |= FileAttributes.Hidden;
-		}
-
-		if (!system) {
-			attributesToSkip |= FileAttributes.System;
-		}
-
-		return attributesToSkip;
 	}
 }

@@ -24,12 +24,13 @@
 - `tests/Seek.Core.Tests`
   Integration-style search tests plus CLI/package consistency checks.
 - `tests/Seek.Cli.Tests`
-  CLI command-surface tests that call `Commands.SearchAsync` directly with redirected `PrettyConsole.ConsoleContext` writers.
+  CLI command-surface tests that call command handlers such as `Commands.SearchAsync` and `Commands.DeleteAsync` directly with redirected `PrettyConsole.ConsoleContext` writers.
 
 ## CLI contract
 
-- The CLI exposes a single default command wired in `Program.cs` via `app.Add("", Commands.SearchAsync)`.
-- The positional argument is the search query. There are no named subcommands.
+- The CLI exposes a default search command wired in `Program.cs` via `app.Add("", Commands.SearchAsync)`.
+- The CLI also exposes a named destructive subcommand wired via `app.Add("delete", Commands.DeleteAsync)`.
+- The default command positional argument is the search query.
 - Current arguments and defaults from `Commands.SearchAsync`:
   - `query`: required positional argument.
   - `regex`: defaults to `false`.
@@ -42,6 +43,16 @@
   - `directories`: defaults to `false`.
   - `root`: defaults to `"."`.
   - `highlightColor`: defaults to `ConsoleColor.Green`.
+- Current arguments and defaults from `Commands.DeleteAsync`:
+  - `query`: required positional argument.
+  - `regex`: defaults to `false`.
+  - `caseSensitive`: defaults to `false`.
+  - `hidden`: defaults to `false`.
+  - `system`: defaults to `false`.
+  - `files`: defaults to `false`.
+  - `directories`: defaults to `false`.
+  - `root`: defaults to `"."`.
+  - `apply`: defaults to `false`.
 - Short aliases currently exposed by the command surface:
   - `-r` => `--regex`
   - `-p` => `--plain`
@@ -53,6 +64,9 @@
 - If `plain` is `true`, the CLI writes the full path directly and does not emit PrettyConsole color/escape sequences for match sections.
 - If `null` is `true`, the CLI emits plain NUL-terminated paths and bypasses highlight rendering.
 - If both `files` and `directories` are `false`, both result kinds are emitted. If both are `true`, the current behavior is also to emit both result kinds.
+- `seek delete` previews candidates by default, prints absolute candidate paths, and only deletes when `apply` is `true`.
+- `seek delete` collapses descendants under matched directories before preview or apply.
+- `seek delete` deletes sequentially, prints one `SUCCESS` or `FAIL` line per candidate in apply mode, and returns exit code `1` if any deletion fails.
 - Worker count is not user-configurable today. `FileSystemSearch` computes it as `Math.Max(1, Environment.ProcessorCount - 1)`.
 - Results are rendered to standard output through `PrettyConsole` when highlighting is enabled.
 - Global exception handling preserves validation and argument parse failures, prints cancellations as a non-error, and prints unexpected exception messages in red while setting exit code `1`.
@@ -120,7 +134,7 @@
 
 ## Change expectations
 
-- Preserve the single-command CLI shape unless the user explicitly asks to expand it.
+- Preserve the current CLI shape unless the user explicitly asks to expand it.
 - Preserve the current traversal strategy unless a different design is justified with performance evidence.
 - Preserve NativeAOT and trimming compatibility unless the user explicitly accepts the tradeoff.
 - When changing matcher semantics, check highlight rendering and existing tests.
