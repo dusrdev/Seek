@@ -57,6 +57,8 @@ The skill guides agents to prefer `seek` for filesystem path lookup instead of `
 
 The positional argument is the search query.
 
+By default, Seek matches against the path relative to `--root` and prints results relative to that root.
+
 Search from the current directory:
 
 ```bash
@@ -67,6 +69,19 @@ Search from a specific root:
 
 ```bash
 seek report --root /path/to/root
+```
+
+Example output:
+
+```text
+src/Seek.Cli/Program.cs
+tests/Seek.Core.Tests/FileSystemSearchTests.cs
+```
+
+Emit absolute paths instead:
+
+```bash
+seek report --root /path/to/root --absolute
 ```
 
 Regex search:
@@ -100,13 +115,16 @@ Machine-readable output for piping:
 seek report --null | xargs -0 rm
 ```
 
+`--null` always emits plain absolute paths terminated by `\0`, so it is safe for piping even when names contain spaces or newlines.
+
 Other useful options:
 
 - `--case-sensitive`
+- `-a, --absolute` to emit absolute paths instead of root-relative paths
 - `-f, --files` to emit only file matches
 - `-d, --directories` to emit only directory matches
 - `--plain` for plain paths without ANSI escape sequences
-- `--null` for NUL-terminated plain paths that are safe to pipe into tools like `xargs -0`
+- `--null` for NUL-terminated absolute paths that are safe to pipe into tools like `xargs -0`
 - `-h, --hidden` to include hidden files
 - `-s, --system` to include system files
 - `--highlight-color Yellow`
