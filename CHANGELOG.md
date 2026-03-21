@@ -1,14 +1,11 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
-- Fix empty-query searches so `seek ""` matches all eligible files and directories instead of hanging indefinitely.
-- Search and highlight against paths relative to `--root`, and print root-relative results by default.
-- Add `-a` / `--absolute` to emit absolute paths when needed.
-- Make `--null` emit plain absolute NUL-terminated paths for safe piping.
-- Add `seek delete` with preview-by-default behavior and `--apply` for sequential deletion.
-- Publish runtime-specific native AOT NuGet tool packages for `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`.
-- Publish a framework-dependent `Seek.any` NuGet tool package as a fallback for unsupported or generic environments.
+- Search results are relative to `--root` by default. Use `--absolute` for standalone paths or `--null` for NUL-terminated absolute paths in scripts.
+- `seek ""` now behaves like a match-all search instead of hanging.
+- Added `seek delete`, which previews matches first and only removes them when you pass `--apply`.
+- NuGet now publishes native AOT tool packages for common runtimes, plus a `Seek.any` fallback package for generic environments.
 
 ## 1.0.0
 
