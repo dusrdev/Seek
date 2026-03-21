@@ -372,15 +372,38 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${{ needs.metadata.outputs.version }}"
+          notes_file="$RUNNER_TEMP/release-notes.md"
+
+          awk -v version="$tag" '
+            BEGIN {
+              in_section = 0
+            }
+            $0 == "## " version {
+              in_section = 1
+              print
+              next
+            }
+            /^## / && in_section {
+              exit
+            }
+            in_section {
+              print
+            }
+          ' CHANGELOG.md > "$notes_file"
+
+          if ! grep -q "^## $tag$" "$notes_file"; then
+            echo "Could not find a CHANGELOG.md section for version $tag" >&2
+            exit 1
+          fi
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" \
               --title "Release $tag" \
-              --notes-file CHANGELOG.md
+              --notes-file "$notes_file"
           else
             gh release create "$tag" \
               --title "Release $tag" \
-              --notes-file CHANGELOG.md
+              --notes-file "$notes_file"
           fi
 
       - name: Upload binaries to GitHub release
