@@ -4,16 +4,23 @@ using System.Threading.Channels;
 namespace Seek.Core;
 
 internal sealed class FileSystemSearch {
+#if DEBUG
+    private static readonly int Workers = 1;
+#else
     private static readonly int Workers = Math.Max(1, Environment.ProcessorCount - 1);
+#endif
 
     private readonly EnumerationOptions _directoryEnumerationOptions;
     private readonly string _rootPath;
+    private readonly int _relativePathOffset;
     private int _remainingWorkers = Workers;
     private readonly IMatcher _matcher;
     private readonly SearchType _searchType;
     private long _pending = 1;
     private readonly FileSystemEnumerable<string>.FindPredicate _handleEntryPredicate;
     private Exception? _workerFailure;
+    private readonly CancellationToken _cancellationToken;
+    private readonly bool _matchDirectories;
 
     private readonly Channel<SearchMatch> _matches = Channel.CreateUnbounded<SearchMatch>(new UnboundedChannelOptions {
         SingleReader = true,
@@ -25,11 +32,16 @@ internal sealed class FileSystemSearch {
         SingleReader = false
     });
 
-    public FileSystemSearch(SearchOptions options) {
+    public FileSystemSearch(SearchOptions options, CancellationToken token = default) {
         _rootPath = NormalizePath(options.Root);
-        _matcher = options.Regex
-                ? new RegexMatcher(options.Query, options.CaseSensitive)
-                : new ContainsMatcher(options.Query, options.CaseSensitive);
+        _relativePathOffset = Path.EndsInDirectorySeparator(_rootPath) ? _rootPath.Length : _rootPath.Length + 1;
+
+        _matcher = (options.Query.Length, options.Regex) switch {
+            (0, _) => new MatchAllMatcher(), // empty non-regex input
+            (_, false) => new ContainsMatcher(options.Query, options.CaseSensitive),
+            (_, true) => new RegexMatcher(options.Query, options.CaseSensitive)
+        };
+
         _directoryEnumerationOptions = new() {
             AttributesToSkip = options.AttributesToSkip,
             IgnoreInaccessible = true,
@@ -40,62 +52,74 @@ internal sealed class FileSystemSearch {
         _handleEntryPredicate = _searchType == SearchType.Directories
             ? HandleSearchEntryForDirectoriesOnly
             : HandleSearchEntryForFilesAndDirectories;
+        _cancellationToken = token;
+        _matchDirectories = _searchType.HasFlag(SearchType.Directories);
     }
 
-    public IAsyncEnumerable<SearchMatch> SearchAsync(
-        CancellationToken cancellationToken = default) {
+    public IAsyncEnumerable<SearchMatch> SearchAsync() {
         if (!Directory.Exists(_rootPath)) {
             throw new DirectoryNotFoundException($"Root path does not exist: {_rootPath}");
         }
 
-        var writer = _processor.Writer;
-        var reader = _processor.Reader;
-        var matcher = _matcher;
-        var resultsWriter = _matches.Writer;
-        bool matchDirectories = _searchType.HasFlag(SearchType.Directories);
-
         for (int i = 0; i < Workers; i++) {
-            _ = Task.Run(async () => {
-                while (await reader.WaitToReadAsync(cancellationToken)) {
-                    while (reader.TryRead(out var searchEntry)) {
-                        if (matchDirectories && matcher.TryFindMatches(searchEntry, out var match)) {
-                            resultsWriter.TryWrite(new SearchMatch(searchEntry, match));
-                        }
-
-                        var enumerable = new FileSystemEnumerable<string>(
-                            searchEntry,
-                            (ref fileSystemEntry) => string.Empty,
-                            _directoryEnumerationOptions) {
-                            ShouldIncludePredicate = _handleEntryPredicate
-                        };
-
-                        _ = enumerable.Count();
-
-                        if (Interlocked.Decrement(ref _pending) == 0) writer.TryComplete();
-                    }
-                }
-            }, cancellationToken).ContinueWith(static (task, state) => {
-                var search = (FileSystemSearch)state!;
-                var exception = task.Exception;
-                var isCancellationOnly = exception is not null
-                    && exception.InnerExceptions.All(static inner => inner is TaskCanceledException or OperationCanceledException);
-
-                if (exception is not null
-                    && !isCancellationOnly
-                    && Interlocked.CompareExchange(ref search._workerFailure, exception, null) is null) {
-                    search._processor.Writer.TryComplete(exception);
-                    search._matches.Writer.TryComplete(exception);
-                }
-
-                if (Interlocked.Decrement(ref search._remainingWorkers) == 0 && search._workerFailure is null) {
-                    search._matches.Writer.TryComplete();
-                }
-            }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            _ = Task.Run(RunWorkerAsync, _cancellationToken)
+                    .ContinueWith(static (task, state) => {
+                        HandleError(task, state);
+                    }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
 
-        writer.TryWrite(_rootPath);
+        Interlocked.Increment(ref _remainingWorkers);
+        _ = Task.Run(() => EnumerateExceptCurrentRoot(_rootPath), _cancellationToken)
+                .ContinueWith(static (task, state) => {
+                    HandleError(task, state);
+                }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
-        return _matches.Reader.ReadAllAsync(cancellationToken);
+        return _matches.Reader.ReadAllAsync(_cancellationToken);
+    }
+
+    private async Task RunWorkerAsync() {
+        while (await _processor.Reader.WaitToReadAsync(_cancellationToken)) {
+            while (_processor.Reader.TryRead(out var searchEntry)) {
+                var relativeSearchEntry = searchEntry.AsSpan(_relativePathOffset);
+
+                if (_matchDirectories && _matcher.TryFindMatches(relativeSearchEntry, out var match)) {
+                    _matches.Writer.TryWrite(new SearchMatch(searchEntry, _relativePathOffset, match, true));
+                }
+
+                EnumerateExceptCurrentRoot(searchEntry);
+            }
+        }
+    }
+
+    private static void HandleError(Task task, object? state) {
+        var search = (FileSystemSearch)state!;
+        var exception = task.Exception;
+        var isCancellationOnly = exception is not null
+            && exception.InnerExceptions.All(static inner => inner is TaskCanceledException or OperationCanceledException);
+
+        if (exception is not null
+            && !isCancellationOnly
+            && Interlocked.CompareExchange(ref search._workerFailure, exception, null) is null) {
+            search._processor.Writer.TryComplete(exception);
+            search._matches.Writer.TryComplete(exception);
+        }
+
+        if (Interlocked.Decrement(ref search._remainingWorkers) == 0 && search._workerFailure is null) {
+            search._matches.Writer.TryComplete();
+        }
+    }
+
+    private void EnumerateExceptCurrentRoot(string searchEntry) {
+        var enumerable = new FileSystemEnumerable<string>(
+                                    searchEntry,
+                                    (ref fileSystemEntry) => string.Empty,
+                                    _directoryEnumerationOptions) {
+            ShouldIncludePredicate = _handleEntryPredicate
+        };
+
+        _ = enumerable.Count();
+
+        if (Interlocked.Decrement(ref _pending) == 0) _processor.Writer.TryComplete();
     }
 
     private bool HandleSearchEntryForFilesAndDirectories(ref FileSystemEntry entry) {
@@ -109,8 +133,9 @@ internal sealed class FileSystemSearch {
             entry.Directory.CopyTo(fullPath);
             fullPath[entry.Directory.Length] = Path.DirectorySeparatorChar;
             entry.FileName.CopyTo(fullPath.Slice(entry.Directory.Length + 1));
-            if (_matcher.TryFindMatches(fullPath, out var match)) {
-                _matches.Writer.TryWrite(new SearchMatch(new string(fullPath), match));
+            ReadOnlySpan<char> relativePath = fullPath.Slice(_relativePathOffset);
+            if (_matcher.TryFindMatches(relativePath, out var match)) {
+                _matches.Writer.TryWrite(new SearchMatch(new string(fullPath), _relativePathOffset, match, false));
             }
             return false;
         }

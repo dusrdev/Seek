@@ -33,6 +33,8 @@ From NuGet:
 dotnet tool install --global Seek
 ```
 
+On supported runtimes, NuGet will resolve Seek's native AOT runtime package for the current machine automatically. A framework-dependent `Seek.any` fallback package is also published for unsupported or generic environments.
+
 Precompiled binaries are also available in GitHub Releases.
 
 ## Agent Skill
@@ -55,6 +57,8 @@ The skill guides agents to prefer `seek` for filesystem path lookup instead of `
 
 The positional argument is the search query.
 
+By default, Seek matches against the path relative to `--root` and prints results relative to that root.
+
 Search from the current directory:
 
 ```bash
@@ -65,6 +69,19 @@ Search from a specific root:
 
 ```bash
 seek report --root /path/to/root
+```
+
+Example output:
+
+```text
+src/Seek.Cli/Program.cs
+tests/Seek.Core.Tests/FileSystemSearchTests.cs
+```
+
+Emit absolute paths instead:
+
+```bash
+seek report --root /path/to/root --absolute
 ```
 
 Regex search:
@@ -98,13 +115,29 @@ Machine-readable output for piping:
 seek report --null | xargs -0 rm
 ```
 
+`--null` always emits plain absolute paths terminated by `\0`, so it is safe for piping even when names contain spaces or newlines.
+
+Built-in delete command:
+
+```bash
+seek delete report
+seek delete report --apply
+seek delete ".*\\.tmp$" --regex --apply
+```
+
+`seek delete` uses the same search-selection options as the default search command: `--regex`, `--case-sensitive`, `--hidden`, `--system`, `--files`, `--directories`, and `--root`.
+
+Without `--apply`, `seek delete` prints the final candidate list and a `No changes were made...` hint. With `--apply`, it deletes each candidate sequentially and prints a `SUCCESS` or `FAIL` status line for each path.
+
 Other useful options:
 
 - `--case-sensitive`
+- `--absolute` to emit absolute paths instead of root-relative paths
 - `-f, --files` to emit only file matches
 - `-d, --directories` to emit only directory matches
 - `--plain` for plain paths without ANSI escape sequences
-- `--null` for NUL-terminated plain paths that are safe to pipe into tools like `xargs -0`
+- `--null` for NUL-terminated absolute paths that are safe to pipe into tools like `xargs -0`
+- `seek delete ... --apply` for built-in deletion after preview
 - `-h, --hidden` to include hidden files
 - `-s, --system` to include system files
 - `--highlight-color Yellow`

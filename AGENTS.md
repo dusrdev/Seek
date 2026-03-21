@@ -14,6 +14,10 @@
 - If a requested change needs unknown external source material, ask for it.
 - If public command behavior, install flow, or package semantics change, ask whether to update `README.md` and `CHANGELOG.md`.
 - When discussing external dependencies, verify behavior against the exact version in use.
+- When preparing a release or changing release-relevant behavior, keep `CHANGELOG.md` and `src/Seek.Cli/Seek.Cli.csproj` `<PackageReleaseNotes>` in sync.
+- Write `CHANGELOG.md` in a human-readable release format aimed at GitHub release readers, not as a raw internal change inventory.
+- Keep `<PackageReleaseNotes>` simpler and shorter than `CHANGELOG.md`, focused on NuGet users and package-facing changes.
+- If one of `CHANGELOG.md` or `<PackageReleaseNotes>` changes for a release, review the other in the same pass so they do not drift.
 
 ## Current architecture
 
@@ -24,12 +28,13 @@
 - `tests/Seek.Core.Tests`
   Integration-style search tests plus CLI/package consistency checks.
 - `tests/Seek.Cli.Tests`
-  CLI command-surface tests that call `Commands.SearchAsync` directly with redirected `PrettyConsole.ConsoleContext` writers.
+  CLI command-surface tests that call command handlers such as `Commands.SearchAsync` and `Commands.DeleteAsync` directly with redirected `PrettyConsole.ConsoleContext` writers.
 
 ## CLI contract
 
-- The CLI exposes a single default command wired in `Program.cs` via `app.Add("", Commands.SearchAsync)`.
-- The positional argument is the search query. There are no named subcommands.
+- The CLI exposes a default search command wired in `Program.cs` via `app.Add("", Commands.SearchAsync)`.
+- The CLI also exposes a named destructive subcommand wired via `app.Add("delete", Commands.DeleteAsync)`.
+- The default command positional argument is the search query.
 - Current arguments and defaults from `Commands.SearchAsync`:
   - `query`: required positional argument.
   - `regex`: defaults to `false`.
@@ -42,6 +47,16 @@
   - `directories`: defaults to `false`.
   - `root`: defaults to `"."`.
   - `highlightColor`: defaults to `ConsoleColor.Green`.
+- Current arguments and defaults from `Commands.DeleteAsync`:
+  - `query`: required positional argument.
+  - `regex`: defaults to `false`.
+  - `caseSensitive`: defaults to `false`.
+  - `hidden`: defaults to `false`.
+  - `system`: defaults to `false`.
+  - `files`: defaults to `false`.
+  - `directories`: defaults to `false`.
+  - `root`: defaults to `"."`.
+  - `apply`: defaults to `false`.
 - Short aliases currently exposed by the command surface:
   - `-r` => `--regex`
   - `-p` => `--plain`
@@ -53,6 +68,9 @@
 - If `plain` is `true`, the CLI writes the full path directly and does not emit PrettyConsole color/escape sequences for match sections.
 - If `null` is `true`, the CLI emits plain NUL-terminated paths and bypasses highlight rendering.
 - If both `files` and `directories` are `false`, both result kinds are emitted. If both are `true`, the current behavior is also to emit both result kinds.
+- `seek delete` previews candidates by default, prints absolute candidate paths, and only deletes when `apply` is `true`.
+- `seek delete` collapses descendants under matched directories before preview or apply.
+- `seek delete` deletes sequentially, prints one `SUCCESS` or `FAIL` line per candidate in apply mode, and returns exit code `1` if any deletion fails.
 - Worker count is not user-configurable today. `FileSystemSearch` computes it as `Math.Max(1, Environment.ProcessorCount - 1)`.
 - Results are rendered to standard output through `PrettyConsole` when highlighting is enabled.
 - Global exception handling preserves validation and argument parse failures, prints cancellations as a non-error, and prints unexpected exception messages in red while setting exit code `1`.
@@ -107,20 +125,31 @@
 ## Packaging and versioning
 
 - `src/Seek.Cli/Seek.Cli.csproj` is the source of package metadata for the tool package.
+- `src/Seek.Cli/Seek.Cli.csproj` `<PackageReleaseNotes>` should summarize the current release in a short, NuGet-friendly form that stays aligned with `CHANGELOG.md`.
 - The package is packed as a .NET tool via `PackAsTool=true`.
+- The CLI package pins `.NET 10.0.0` via `RuntimeFrameworkVersion`; `src/Seek.Core/Seek.Core.csproj` does the same.
+- AOT compatibility is enforced in project metadata via `IsAotCompatible` and `VerifyReferenceAotCompatibility`.
 - Optional strong-name signing for the CLI assembly is enabled by passing `StrongNameKeyPath` at build or pack time.
 - Package identity is `Seek`.
+- Tool packages are published for `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `any` via `ToolPackageRuntimeIdentifiers`.
 - The package embeds:
   - the repository `README.md` as package readme
   - `assets/seek-icon.png` as package icon, packed to `seek-icon.png`
 - `DotnetToolSettings.xml` is generated into the `.nupkg` by the SDK during packing.
 - `ConsoleApp.Version` in `src/Seek.Cli/Program.cs` is expected to match the project `<Version>` in `src/Seek.Cli/Seek.Cli.csproj`.
 - The release workflow materializes a base64-encoded `SNK` GitHub secret into a temporary `.snk` file and passes it as `StrongNameKeyPath`.
-- The binary release workflow emits GitHub build attestations and Sigstore bundles for each zipped release artifact.
+- The release workflow extracts the version once in a `metadata` job and reuses it across NuGet and GitHub release jobs.
+- The GitHub release workflow extracts only the matching `## <version>` section from `CHANGELOG.md`, so each released version needs its own clearly labeled section.
+- The NuGet release flow publishes:
+  - a top-level tool package with `CreateRidSpecificToolPackages=false`
+  - a framework-dependent fallback tool package for RID `any`
+  - RID-specific native AOT tool packages for supported runtimes
+- The binary release workflow publishes zipped native binaries for `win-x86`, `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`.
+- The binary release workflow emits GitHub build attestations and Sigstore bundles for each zipped release artifact, and uploads them through the `github-release` job.
 
 ## Change expectations
 
-- Preserve the single-command CLI shape unless the user explicitly asks to expand it.
+- Preserve the current CLI shape unless the user explicitly asks to expand it.
 - Preserve the current traversal strategy unless a different design is justified with performance evidence.
 - Preserve NativeAOT and trimming compatibility unless the user explicitly accepts the tradeoff.
 - When changing matcher semantics, check highlight rendering and existing tests.

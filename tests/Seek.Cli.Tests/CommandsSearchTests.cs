@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 using PrettyConsole;
 
 namespace Seek.Cli.Tests;
@@ -23,7 +21,7 @@ public sealed class CommandsSearchTests {
         var lines = SplitNewlineRecords(stdout);
 
         await Assert.That(exitCode).IsEqualTo(0);
-        await AssertSamePaths(lines, [directoryPath, filePath]);
+        await AssertSamePaths(lines, ["logs", Path.Combine("logs", "alpha.log")]);
     }
 
     [Test]
@@ -45,7 +43,7 @@ public sealed class CommandsSearchTests {
         await Assert.That(exitCode).IsEqualTo(0);
         await Assert.That(stdout.Contains('\u001b', StringComparison.Ordinal)).IsFalse();
         await Assert.That(lines.Length).IsEqualTo(1);
-        await Assert.That(lines[0]).IsEqualTo(filePath);
+        await Assert.That(lines[0]).IsEqualTo("alpha.log");
     }
 
     [Test]
@@ -69,7 +67,7 @@ public sealed class CommandsSearchTests {
         var lines = SplitNewlineRecords(stdout);
 
         await Assert.That(exitCode).IsEqualTo(0);
-        await AssertSamePaths(lines, [filePath]);
+        await AssertSamePaths(lines, [Path.Combine("container", "alpha.log")]);
     }
 
     [Test]
@@ -91,17 +89,17 @@ public sealed class CommandsSearchTests {
         var lines = SplitNewlineRecords(stdout);
 
         await Assert.That(exitCode).IsEqualTo(0);
-        await AssertSamePaths(lines, [matchingDirectory]);
+        await AssertSamePaths(lines, ["alpha-dir"]);
     }
 
     [Test]
     [NotInParallel("ConsoleContext")]
-    public async Task SearchAsync_DirectoriesFlag_EmitsMatchingRootPath(CancellationToken cancellationToken) {
+    public async Task SearchAsync_DirectoriesFlag_DoesNotEmitMatchingRootPath(CancellationToken cancellationToken) {
         using var sandbox = Sandbox.Create("alpha-root");
         Directory.CreateDirectory(Path.Combine(sandbox.RootPath, "child"));
 
         var (exitCode, stdout) = await InvokeSearchAsync(
-            query: $"^{Regex.Escape(sandbox.RootPath)}$",
+            query: @"^\.$",
             root: sandbox.RootPath,
             regex: true,
             directories: true,
@@ -109,7 +107,28 @@ public sealed class CommandsSearchTests {
             cancellationToken: cancellationToken);
 
         await Assert.That(exitCode).IsEqualTo(0);
-        await AssertSamePaths(SplitNewlineRecords(stdout), [sandbox.RootPath]);
+        await Assert.That(SplitNewlineRecords(stdout)).IsEmpty();
+    }
+
+    [Test]
+    [NotInParallel("ConsoleContext")]
+    public async Task SearchAsync_EmptyQuery_WritesAllMatches(CancellationToken cancellationToken) {
+        using var sandbox = Sandbox.Create();
+        var directoryPath = Path.Combine(sandbox.RootPath, "logs");
+        var nestedFilePath = Path.Combine(directoryPath, "alpha.log");
+        var rootFilePath = Path.Combine(sandbox.RootPath, "beta.txt");
+        Directory.CreateDirectory(directoryPath);
+        await File.WriteAllTextAsync(nestedFilePath, "alpha", cancellationToken);
+        await File.WriteAllTextAsync(rootFilePath, "beta", cancellationToken);
+
+        var (exitCode, stdout) = await InvokeSearchAsync(
+            query: string.Empty,
+            root: sandbox.RootPath,
+            noHighlight: true,
+            cancellationToken: cancellationToken);
+
+        await Assert.That(exitCode).IsEqualTo(0);
+        await AssertSamePaths(SplitNewlineRecords(stdout), ["beta.txt", "logs", Path.Combine("logs", "alpha.log")]);
     }
 
     [Test]
@@ -148,7 +167,7 @@ public sealed class CommandsSearchTests {
 
         await Assert.That(exitCode).IsEqualTo(0);
         await Assert.That(stdout.Contains('\u001b', StringComparison.Ordinal)).IsFalse();
-        await AssertSamePaths(SplitNewlineRecords(stdout), [matchingDirectory]);
+        await AssertSamePaths(SplitNewlineRecords(stdout), ["alpha-dir"]);
     }
 
     [Test]
@@ -190,7 +209,7 @@ public sealed class CommandsSearchTests {
             cancellationToken: cancellationToken);
 
         await Assert.That(exitCode).IsEqualTo(0);
-        await AssertSamePaths(SplitNewlineRecords(stdout), [directoryPath, filePath]);
+        await AssertSamePaths(SplitNewlineRecords(stdout), ["logs", Path.Combine("logs", "alpha.log")]);
     }
 
     [Test]
@@ -208,6 +227,27 @@ public sealed class CommandsSearchTests {
 
         await Assert.That(exitCode).IsEqualTo(0);
         await Assert.That(stdout).IsEqualTo($"{filePath}\0");
+    }
+
+    [Test]
+    [NotInParallel("ConsoleContext")]
+    public async Task SearchAsync_AbsoluteFlag_WritesAbsolutePaths(CancellationToken cancellationToken) {
+        using var sandbox = Sandbox.Create();
+        var filePath = Path.Combine(sandbox.RootPath, "alpha.log");
+        await File.WriteAllTextAsync(filePath, "alpha", cancellationToken);
+
+        var (exitCode, stdout) = await InvokeSearchAsync(
+            query: "alpha",
+            root: sandbox.RootPath,
+            noHighlight: true,
+            absolute: true,
+            cancellationToken: cancellationToken);
+
+        var lines = SplitNewlineRecords(stdout);
+
+        await Assert.That(exitCode).IsEqualTo(0);
+        await Assert.That(lines.Length).IsEqualTo(1);
+        await Assert.That(lines[0]).IsEqualTo(filePath);
     }
 
     [Test]
@@ -279,6 +319,7 @@ public sealed class CommandsSearchTests {
         bool @null = false,
         bool files = false,
         bool directories = false,
+        bool absolute = false,
         ConsoleColor highlightColor = ConsoleColor.Green,
         CancellationToken cancellationToken = default) {
         var output = new StringWriter();
@@ -288,18 +329,19 @@ public sealed class CommandsSearchTests {
             ConsoleContext.Out = output;
 
             var exitCode = await Commands.SearchAsync(
-                query: query,
-                regex: regex,
-                caseSensitive: false,
-                plain: noHighlight,
-                @null: @null,
-                hidden: false,
-                system: false,
-                files: files,
-                directories: directories,
-                root: root,
-                highlightColor: highlightColor,
-                cancellationToken: cancellationToken);
+                query,
+                regex,
+                false,
+                noHighlight,
+                absolute,
+                @null,
+                false,
+                false,
+                files,
+                directories,
+                root,
+                highlightColor,
+                cancellationToken);
 
             return (exitCode, output.ToString());
         } finally {

@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace Seek.Core.Tests;
 
 public sealed class FileSystemSearchTests {
@@ -11,10 +9,10 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, "log");
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
-        await Assert.That(results.Any(match => Render(match) == Path.Combine(sandbox.RootPath, "logs"))).IsTrue();
-        await Assert.That(results.Any(match => Render(match) == Path.Combine(sandbox.RootPath, "logs", "alpha.log"))).IsTrue();
+        await Assert.That(results.Any(match => Render(match) == "logs")).IsTrue();
+        await Assert.That(results.Any(match => Render(match) == Path.Combine("logs", "alpha.log"))).IsTrue();
     }
 
     [Test]
@@ -29,9 +27,9 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, "alpha", searchType: SearchType.Files);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
-        await AssertSamePaths(results.Select(Render), [nestedFile]);
+        await AssertSamePaths(results.Select(Render), [Path.Combine("container", "nested", "alpha.log")]);
     }
 
     [Test]
@@ -44,26 +42,25 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, "alpha", searchType: SearchType.Directories);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
-        await AssertSamePaths(results.Select(Render), [matchingDirectory]);
+        await AssertSamePaths(results.Select(Render), ["alpha-dir"]);
     }
 
     [Test]
-    public async Task SearchAsync_DirectoriesTarget_EmitsMatchingRootPath(CancellationToken cancellationToken) {
+    public async Task SearchAsync_DirectoriesTarget_DoesNotEmitRootPath(CancellationToken cancellationToken) {
         using var sandbox = Sandbox.Create("alpha-root");
         Directory.CreateDirectory(Path.Combine(sandbox.RootPath, "child"));
 
         var search = CreateRegexSearch(
             sandbox.RootPath,
-            $"^{Regex.Escape(sandbox.RootPath)}$",
+            @"^\.$",
             caseSensitive: true,
             searchType: SearchType.Directories);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
-        await Assert.That(results.Count).IsEqualTo(1);
-        await Assert.That(Render(results[0])).IsEqualTo(sandbox.RootPath);
+        await Assert.That(results.Count).IsEqualTo(0);
     }
 
     [Test]
@@ -78,12 +75,12 @@ public sealed class FileSystemSearchTests {
         var hiddenSearch = CreateContainsSearch(sandbox.RootPath, ".git");
         var trackedSearch = CreateContainsSearch(sandbox.RootPath, "tracked");
 
-        var hiddenResults = await CollectAsync(hiddenSearch.SearchAsync(cancellationToken), cancellationToken);
-        var trackedResults = await CollectAsync(trackedSearch.SearchAsync(cancellationToken), cancellationToken);
+        var hiddenResults = await CollectAsync(hiddenSearch.SearchAsync(), cancellationToken);
+        var trackedResults = await CollectAsync(trackedSearch.SearchAsync(), cancellationToken);
 
         await Assert.That(hiddenResults.Count).IsEqualTo(0);
         await Assert.That(trackedResults.Count).IsEqualTo(1);
-        await Assert.That(Render(trackedResults[0])).IsEqualTo(Path.Combine(sandbox.RootPath, "tracked.txt"));
+        await Assert.That(Render(trackedResults[0])).IsEqualTo("tracked.txt");
     }
 
     [Test]
@@ -97,10 +94,10 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, ".git", attributesToSkip: FileAttributes.ReparsePoint | FileAttributes.System);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
-        await Assert.That(results.Any(match => Render(match) == hiddenDirectory)).IsTrue();
-        await Assert.That(results.Any(match => Render(match) == hiddenFile)).IsTrue();
+        await Assert.That(results.Any(match => Render(match) == ".git")).IsTrue();
+        await Assert.That(results.Any(match => Render(match) == Path.Combine(".git", "config"))).IsTrue();
     }
 
     [Test]
@@ -112,7 +109,7 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, ".env");
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
         await Assert.That(results.Count).IsEqualTo(0);
     }
@@ -126,10 +123,10 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, ".env", attributesToSkip: FileAttributes.ReparsePoint | FileAttributes.System);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
         await Assert.That(results.Count).IsEqualTo(1);
-        await Assert.That(Render(results[0])).IsEqualTo(hiddenFile);
+        await Assert.That(Render(results[0])).IsEqualTo(".env");
     }
 
     [Test]
@@ -143,7 +140,7 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, "system.txt");
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
         await Assert.That(results.Count).IsEqualTo(0);
     }
@@ -159,10 +156,10 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, "system.txt", attributesToSkip: FileAttributes.ReparsePoint | FileAttributes.Hidden);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
 
         await Assert.That(results.Count).IsEqualTo(1);
-        await Assert.That(Render(results[0])).IsEqualTo(systemFile);
+        await Assert.That(Render(results[0])).IsEqualTo("system.txt");
     }
 
     [Test]
@@ -173,10 +170,10 @@ public sealed class FileSystemSearchTests {
 
         var search = CreateContainsSearch(sandbox.RootPath, "needle");
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken).WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken).WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
 
         await Assert.That(results.Count).IsEqualTo(1);
-        await Assert.That(Render(results[0])).IsEqualTo(Path.Combine(sandbox.RootPath, "level1", "level2", "needle.txt"));
+        await Assert.That(Render(results[0])).IsEqualTo(Path.Combine("level1", "level2", "needle.txt"));
     }
 
     [Test]
@@ -194,7 +191,7 @@ public sealed class FileSystemSearchTests {
         var sawFirstResult = false;
 
         var enumerateTask = Task.Run(async () => {
-            await foreach (var _ in search.SearchAsync(cts.Token).WithCancellation(cts.Token)) {
+            await foreach (var _ in search.SearchAsync().WithCancellation(cts.Token)) {
                 sawFirstResult = true;
                 cts.Cancel();
             }
@@ -214,11 +211,31 @@ public sealed class FileSystemSearchTests {
         var caseInsensitiveSearch = CreateContainsSearch(sandbox.RootPath, "alpha", caseSensitive: false);
         var caseSensitiveSearch = CreateContainsSearch(sandbox.RootPath, "alpha", caseSensitive: true);
 
-        var caseInsensitiveResults = await CollectAsync(caseInsensitiveSearch.SearchAsync(cancellationToken), cancellationToken);
-        var caseSensitiveResults = await CollectAsync(caseSensitiveSearch.SearchAsync(cancellationToken), cancellationToken);
+        var caseInsensitiveResults = await CollectAsync(caseInsensitiveSearch.SearchAsync(), cancellationToken);
+        var caseSensitiveResults = await CollectAsync(caseSensitiveSearch.SearchAsync(), cancellationToken);
 
-        await Assert.That(caseInsensitiveResults.Any(match => match.Path == filePath)).IsTrue();
-        await Assert.That(caseSensitiveResults.Any(match => match.Path == filePath)).IsFalse();
+        await Assert.That(caseInsensitiveResults.Any(match => GetRelativePath(match) == "Alpha.log")).IsTrue();
+        await Assert.That(caseSensitiveResults.Any(match => GetRelativePath(match) == "Alpha.log")).IsFalse();
+    }
+
+    [Test]
+    public async Task SearchAsync_EmptyQuery_MatchesAllFilesAndDirectories(CancellationToken cancellationToken) {
+        using var sandbox = Sandbox.Create();
+        var directoryPath = Path.Combine(sandbox.RootPath, "logs");
+        var nestedFilePath = Path.Combine(directoryPath, "alpha.log");
+        var rootFilePath = Path.Combine(sandbox.RootPath, "beta.txt");
+        Directory.CreateDirectory(directoryPath);
+        await File.WriteAllTextAsync(nestedFilePath, "alpha", cancellationToken);
+        await File.WriteAllTextAsync(rootFilePath, "beta", cancellationToken);
+
+        var search = CreateContainsSearch(sandbox.RootPath, string.Empty);
+
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken).WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
+        await AssertSamePaths(results.Select(Render), ["beta.txt", "logs", Path.Combine("logs", "alpha.log")]);
+        await Assert.That(results.All(match => match.Sections.Count == 1)).IsTrue();
+        await Assert.That(results.All(match => !match.Sections[0].IsMatch)).IsTrue();
+        await Assert.That(results.All(match => Render(match) == GetRelativePath(match))).IsTrue();
     }
 
     [Test]
@@ -230,11 +247,11 @@ public sealed class FileSystemSearchTests {
         var caseInsensitiveSearch = CreateRegexSearch(sandbox.RootPath, @"alpha\.log$", caseSensitive: false);
         var caseSensitiveSearch = CreateRegexSearch(sandbox.RootPath, @"alpha\.log$", caseSensitive: true);
 
-        var caseInsensitiveResults = await CollectAsync(caseInsensitiveSearch.SearchAsync(cancellationToken), cancellationToken);
-        var caseSensitiveResults = await CollectAsync(caseSensitiveSearch.SearchAsync(cancellationToken), cancellationToken);
+        var caseInsensitiveResults = await CollectAsync(caseInsensitiveSearch.SearchAsync(), cancellationToken);
+        var caseSensitiveResults = await CollectAsync(caseSensitiveSearch.SearchAsync(), cancellationToken);
 
-        await Assert.That(caseInsensitiveResults.Any(match => match.Path == filePath)).IsTrue();
-        await Assert.That(caseSensitiveResults.Any(match => match.Path == filePath)).IsFalse();
+        await Assert.That(caseInsensitiveResults.Any(match => GetRelativePath(match) == "Alpha.log")).IsTrue();
+        await Assert.That(caseSensitiveResults.Any(match => GetRelativePath(match) == "Alpha.log")).IsFalse();
     }
 
     [Test]
@@ -298,48 +315,52 @@ public sealed class FileSystemSearchTests {
     }
 
     [Test]
-    public async Task SearchAsync_FileHighlightRanges_AreBasedOnFullPath(CancellationToken cancellationToken) {
+    public async Task SearchAsync_FileHighlightRanges_AreBasedOnRelativePath(CancellationToken cancellationToken) {
         using var sandbox = Sandbox.Create();
         Directory.CreateDirectory(Path.Combine(sandbox.RootPath, "nested"));
         var filePath = Path.Combine(sandbox.RootPath, "nested", "alpha.log");
         await File.WriteAllTextAsync(filePath, "alpha", cancellationToken);
+        var relativeFilePath = Path.Combine("nested", "alpha.log");
 
         var search = CreateContainsSearch(sandbox.RootPath, "alpha");
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
-        var fileMatches = results.Where(match => match.Path == filePath).ToList();
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
+        var fileMatches = results.Where(match => GetRelativePath(match) == relativeFilePath).ToList();
         await Assert.That(fileMatches.Count).IsEqualTo(1);
         var fileMatch = fileMatches[0];
+        await Assert.That(fileMatch.Path).IsEqualTo(filePath);
 
-        await Assert.That(Render(fileMatch)).IsEqualTo(filePath);
+        await Assert.That(Render(fileMatch)).IsEqualTo(relativeFilePath);
 
         var highlightedRanges = fileMatch.Sections.Where(range => range.IsMatch).ToList();
         await Assert.That(highlightedRanges.Count).IsEqualTo(1);
         var highlighted = highlightedRanges[0];
-        await Assert.That(highlighted.Start).IsEqualTo(filePath.LastIndexOf("alpha", StringComparison.Ordinal));
-        await Assert.That(filePath.AsSpan(highlighted.Start, highlighted.Length).ToString()).IsEqualTo("alpha");
+        await Assert.That(highlighted.Start).IsEqualTo(relativeFilePath.LastIndexOf("alpha", StringComparison.Ordinal));
+        await Assert.That(relativeFilePath.AsSpan(highlighted.Start, highlighted.Length).ToString()).IsEqualTo("alpha");
     }
 
     [Test]
-    public async Task SearchAsync_RegexHighlight_ReconstructsFullPathForFiles(CancellationToken cancellationToken) {
+    public async Task SearchAsync_RegexHighlight_ReconstructsRelativePathForFiles(CancellationToken cancellationToken) {
         using var sandbox = Sandbox.Create();
         Directory.CreateDirectory(Path.Combine(sandbox.RootPath, "nested"));
         var filePath = Path.Combine(sandbox.RootPath, "nested", "file-42.txt");
         await File.WriteAllTextAsync(filePath, "x", cancellationToken);
+        var relativeFilePath = Path.Combine("nested", "file-42.txt");
 
         var search = CreateRegexSearch(sandbox.RootPath, @"file-42\.txt", caseSensitive: true);
 
-        var results = await CollectAsync(search.SearchAsync(cancellationToken), cancellationToken);
-        var fileMatches = results.Where(match => match.Path == filePath).ToList();
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken);
+        var fileMatches = results.Where(match => GetRelativePath(match) == relativeFilePath).ToList();
         await Assert.That(fileMatches.Count).IsEqualTo(1);
         var fileMatch = fileMatches[0];
+        await Assert.That(fileMatch.Path).IsEqualTo(filePath);
 
-        await Assert.That(Render(fileMatch)).IsEqualTo(filePath);
+        await Assert.That(Render(fileMatch)).IsEqualTo(relativeFilePath);
 
         var highlightedRanges = fileMatch.Sections.Where(range => range.IsMatch).ToList();
         await Assert.That(highlightedRanges.Count).IsEqualTo(1);
         var highlighted = highlightedRanges[0];
-        await Assert.That(filePath.AsSpan(highlighted.Start, highlighted.Length).ToString()).IsEqualTo("file-42.txt");
+        await Assert.That(relativeFilePath.AsSpan(highlighted.Start, highlighted.Length).ToString()).IsEqualTo("file-42.txt");
     }
 
     private static FileSystemSearch CreateContainsSearch(
@@ -398,11 +419,19 @@ public sealed class FileSystemSearchTests {
     }
 
     private static string Render(SearchMatch match) {
-        return Render(match.Path, match.Sections);
+        return Render(GetRelativePath(match), match.Sections);
     }
 
     private static string Render(string source, Sections match) {
         return string.Concat(match.Select(range => source.AsSpan(range.Start, range.Length).ToString()));
+    }
+
+    private static string GetRelativePath(SearchMatch match) {
+        if (match.RelativePathOffset == match.Path.Length) {
+            return ".";
+        }
+
+        return match.Path[match.RelativePathOffset..];
     }
 
     private static async Task<List<SearchMatch>> CollectAsync(
