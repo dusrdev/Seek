@@ -32,7 +32,6 @@ internal sealed class FileSystemSearch {
         SingleReader = false
     });
 
-
     public FileSystemSearch(SearchOptions options, CancellationToken token = default) {
         _rootPath = NormalizePath(options.Root);
         _relativePathOffset = Path.EndsInDirectorySeparator(_rootPath) ? _rootPath.Length : _rootPath.Length + 1;
@@ -122,7 +121,6 @@ internal sealed class FileSystemSearch {
 
         if (Interlocked.Decrement(ref _pending) == 0) _processor.Writer.TryComplete();
     }
-
 
     private bool HandleSearchEntryForFilesAndDirectories(ref FileSystemEntry entry) {
         if (entry.IsDirectory) {
