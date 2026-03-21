@@ -14,7 +14,7 @@ internal static partial class Commands {
 	/// <param name="regex">-r, Treat the query as regex pattern</param>
 	/// <param name="caseSensitive">Perform a case sensitive search</param>
 	/// <param name="plain">-p, Disable matching section highlight</param>
-	/// <param name="absolute">-a, Emit absolute paths instead of paths relative to the selected root</param>
+	/// <param name="absolute">Emit absolute paths instead of paths relative to the selected root</param>
 	/// <param name="null">Emit machine-readable NUL-terminated paths for safe piping, implies --plain and --absolute</param>
 	/// <param name="hidden">-h, Include hidden files and folders</param>
 	/// <param name="system">-s, Include system files and folders</param>

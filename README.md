@@ -132,7 +132,7 @@ Without `--apply`, `seek delete` prints the final candidate list and a `No chang
 Other useful options:
 
 - `--case-sensitive`
-- `-a, --absolute` to emit absolute paths instead of root-relative paths
+- `--absolute` to emit absolute paths instead of root-relative paths
 - `-f, --files` to emit only file matches
 - `-d, --directories` to emit only directory matches
 - `--plain` for plain paths without ANSI escape sequences
