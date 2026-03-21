@@ -77,4 +77,17 @@
     </PackageReference>
     <PackageReference Include="PrettyConsole" Version="5.4.2" />
   </ItemGroup>
+
+  <Target Name="ExcludeAotSymbolsFromToolPackages"
+          AfterTargets="PackTool"
+          Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
+    <ItemGroup>
+      <_AotToolSymbolPackageFiles Include="@(TfmSpecificPackageFile)"
+                                  Condition="$([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.pdb'))
+                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.dbg'))
+                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM/'))
+                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM\\'))" />
+      <TfmSpecificPackageFile Remove="@(_AotToolSymbolPackageFiles)" />
+    </ItemGroup>
+  </Target>
 </Project>
