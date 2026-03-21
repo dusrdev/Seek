@@ -14,6 +14,10 @@
 - If a requested change needs unknown external source material, ask for it.
 - If public command behavior, install flow, or package semantics change, ask whether to update `README.md` and `CHANGELOG.md`.
 - When discussing external dependencies, verify behavior against the exact version in use.
+- When preparing a release or changing release-relevant behavior, keep `CHANGELOG.md` and `src/Seek.Cli/Seek.Cli.csproj` `<PackageReleaseNotes>` in sync.
+- Write `CHANGELOG.md` in a human-readable release format aimed at GitHub release readers, not as a raw internal change inventory.
+- Keep `<PackageReleaseNotes>` simpler and shorter than `CHANGELOG.md`, focused on NuGet users and package-facing changes.
+- If one of `CHANGELOG.md` or `<PackageReleaseNotes>` changes for a release, review the other in the same pass so they do not drift.
 
 ## Current architecture
 
@@ -121,6 +125,7 @@
 ## Packaging and versioning
 
 - `src/Seek.Cli/Seek.Cli.csproj` is the source of package metadata for the tool package.
+- `src/Seek.Cli/Seek.Cli.csproj` `<PackageReleaseNotes>` should summarize the current release in a short, NuGet-friendly form that stays aligned with `CHANGELOG.md`.
 - The package is packed as a .NET tool via `PackAsTool=true`.
 - The CLI package pins `.NET 10.0.0` via `RuntimeFrameworkVersion`; `src/Seek.Core/Seek.Core.csproj` does the same.
 - AOT compatibility is enforced in project metadata via `IsAotCompatible` and `VerifyReferenceAotCompatibility`.
@@ -134,6 +139,7 @@
 - `ConsoleApp.Version` in `src/Seek.Cli/Program.cs` is expected to match the project `<Version>` in `src/Seek.Cli/Seek.Cli.csproj`.
 - The release workflow materializes a base64-encoded `SNK` GitHub secret into a temporary `.snk` file and passes it as `StrongNameKeyPath`.
 - The release workflow extracts the version once in a `metadata` job and reuses it across NuGet and GitHub release jobs.
+- The GitHub release workflow extracts only the matching `## <version>` section from `CHANGELOG.md`, so each released version needs its own clearly labeled section.
 - The NuGet release flow publishes:
   - a top-level tool package with `CreateRidSpecificToolPackages=false`
   - a framework-dependent fallback tool package for RID `any`
