@@ -6,6 +6,13 @@ internal interface IMatcher {
 	bool TryFindMatches(ReadOnlySpan<char> path, out Sections match);
 }
 
+internal sealed class MatchAllMatcher : IMatcher {
+	public bool TryFindMatches(ReadOnlySpan<char> path, out Sections match) {
+		match = [new MatchRanges(0, path.Length)];
+		return true;
+	}
+}
+
 internal sealed class RegexMatcher : IMatcher {
 	private readonly Regex _regex;
 

@@ -112,6 +112,27 @@ public sealed class CommandsSearchTests {
 
     [Test]
     [NotInParallel("ConsoleContext")]
+    public async Task SearchAsync_EmptyQuery_WritesAllMatches(CancellationToken cancellationToken) {
+        using var sandbox = Sandbox.Create();
+        var directoryPath = Path.Combine(sandbox.RootPath, "logs");
+        var nestedFilePath = Path.Combine(directoryPath, "alpha.log");
+        var rootFilePath = Path.Combine(sandbox.RootPath, "beta.txt");
+        Directory.CreateDirectory(directoryPath);
+        await File.WriteAllTextAsync(nestedFilePath, "alpha", cancellationToken);
+        await File.WriteAllTextAsync(rootFilePath, "beta", cancellationToken);
+
+        var (exitCode, stdout) = await InvokeSearchAsync(
+            query: string.Empty,
+            root: sandbox.RootPath,
+            noHighlight: true,
+            cancellationToken: cancellationToken);
+
+        await Assert.That(exitCode).IsEqualTo(0);
+        await AssertSamePaths(SplitNewlineRecords(stdout), ["beta.txt", "logs", Path.Combine("logs", "alpha.log")]);
+    }
+
+    [Test]
+    [NotInParallel("ConsoleContext")]
     public async Task SearchAsync_Null_WritesPlainPathsWithNullTerminators(CancellationToken cancellationToken) {
         using var sandbox = Sandbox.Create();
         var filePath = Path.Combine(sandbox.RootPath, "alpha.log");

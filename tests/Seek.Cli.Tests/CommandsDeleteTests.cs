@@ -50,6 +50,32 @@ public sealed class CommandsDeleteTests {
 
 	[Test]
 	[NotInParallel("ConsoleContext")]
+	public async Task DeleteAsync_PreviewMode_EmptyQuery_FilesFlagMatchesAllFiles(CancellationToken cancellationToken) {
+		using var sandbox = Sandbox.Create();
+		var nestedDirectoryPath = Path.Combine(sandbox.RootPath, "logs");
+		var nestedFilePath = Path.Combine(nestedDirectoryPath, "alpha.log");
+		var rootFilePath = Path.Combine(sandbox.RootPath, "beta.txt");
+		Directory.CreateDirectory(nestedDirectoryPath);
+		await File.WriteAllTextAsync(nestedFilePath, "alpha", cancellationToken);
+		await File.WriteAllTextAsync(rootFilePath, "beta", cancellationToken);
+
+		var (exitCode, stdout) = await InvokeDeleteAsync(
+			query: string.Empty,
+			root: sandbox.RootPath,
+			files: true,
+			cancellationToken: cancellationToken);
+		var lines = SplitNewlineRecords(stdout);
+		var candidateLines = lines.Take(lines.Length - 1).ToArray();
+
+		await Assert.That(exitCode).IsEqualTo(0);
+		await Assert.That(File.Exists(rootFilePath)).IsTrue();
+		await Assert.That(File.Exists(nestedFilePath)).IsTrue();
+		await AssertSamePaths(candidateLines, [rootFilePath, nestedFilePath]);
+		await Assert.That(lines[^1]).IsEqualTo("No changes were made. Re-run with --apply to delete these entries.");
+	}
+
+	[Test]
+	[NotInParallel("ConsoleContext")]
 	public async Task DeleteAsync_ApplyMode_DeletesMatchedFiles(CancellationToken cancellationToken) {
 		using var sandbox = Sandbox.Create();
 		var filePath = Path.Combine(sandbox.RootPath, "alpha.log");

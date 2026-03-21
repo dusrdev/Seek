@@ -36,9 +36,13 @@ internal sealed class FileSystemSearch {
     public FileSystemSearch(SearchOptions options, CancellationToken token = default) {
         _rootPath = NormalizePath(options.Root);
         _relativePathOffset = Path.EndsInDirectorySeparator(_rootPath) ? _rootPath.Length : _rootPath.Length + 1;
-        _matcher = options.Regex
-                ? new RegexMatcher(options.Query, options.CaseSensitive)
-                : new ContainsMatcher(options.Query, options.CaseSensitive);
+
+        _matcher = (options.Query.Length, options.Regex) switch {
+            (0, _) => new MatchAllMatcher(), // empty non-regex input
+            (_, false) => new ContainsMatcher(options.Query, options.CaseSensitive),
+            (_, true) => new RegexMatcher(options.Query, options.CaseSensitive)
+        };
+
         _directoryEnumerationOptions = new() {
             AttributesToSkip = options.AttributesToSkip,
             IgnoreInaccessible = true,

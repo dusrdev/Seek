@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix empty-query searches so `seek ""` matches all eligible files and directories instead of hanging indefinitely.
 - Search and highlight against paths relative to `--root`, and print root-relative results by default.
 - Add `-a` / `--absolute` to emit absolute paths when needed.
 - Make `--null` emit plain absolute NUL-terminated paths for safe piping.

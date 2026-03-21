@@ -219,6 +219,26 @@ public sealed class FileSystemSearchTests {
     }
 
     [Test]
+    public async Task SearchAsync_EmptyQuery_MatchesAllFilesAndDirectories(CancellationToken cancellationToken) {
+        using var sandbox = Sandbox.Create();
+        var directoryPath = Path.Combine(sandbox.RootPath, "logs");
+        var nestedFilePath = Path.Combine(directoryPath, "alpha.log");
+        var rootFilePath = Path.Combine(sandbox.RootPath, "beta.txt");
+        Directory.CreateDirectory(directoryPath);
+        await File.WriteAllTextAsync(nestedFilePath, "alpha", cancellationToken);
+        await File.WriteAllTextAsync(rootFilePath, "beta", cancellationToken);
+
+        var search = CreateContainsSearch(sandbox.RootPath, string.Empty);
+
+        var results = await CollectAsync(search.SearchAsync(), cancellationToken).WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
+        await AssertSamePaths(results.Select(Render), ["beta.txt", "logs", Path.Combine("logs", "alpha.log")]);
+        await Assert.That(results.All(match => match.Sections.Count == 1)).IsTrue();
+        await Assert.That(results.All(match => !match.Sections[0].IsMatch)).IsTrue();
+        await Assert.That(results.All(match => Render(match) == GetRelativePath(match))).IsTrue();
+    }
+
+    [Test]
     public async Task SearchAsync_RegexSearch_UsesCaseSensitiveFlag(CancellationToken cancellationToken) {
         using var sandbox = Sandbox.Create();
         var filePath = Path.Combine(sandbox.RootPath, "Alpha.log");
