@@ -13,6 +13,7 @@ concurrency:
 env:
   CLI_PROJECT: src/Seek.Cli/Seek.Cli.csproj
   NUGET_SOURCE: https://api.nuget.org/v3/index.json
+  WINGET_INSTALLERS_REGEX: '^seek-win-(x64|arm64)\.exe$'
 
 jobs:
   metadata:
@@ -120,10 +121,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            rid: win-x64
-          - os: windows-latest
-            rid: win-arm64
           - os: ubuntu-latest
             rid: linux-x64
           - os: ubuntu-24.04-arm
@@ -323,6 +320,12 @@ jobs:
         run: |
           Compress-Archive -Path "publish\Seek.exe" -DestinationPath "seek-${{ matrix.rid }}.zip"
 
+      - name: Stage raw Windows binary
+        if: runner.os == 'Windows' && (matrix.rid == 'win-x64' || matrix.rid == 'win-arm64')
+        shell: pwsh
+        run: |
+          Copy-Item "publish\Seek.exe" "seek-${{ matrix.rid }}.exe"
+
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
@@ -340,6 +343,14 @@ jobs:
         with:
           name: seek-${{ matrix.rid }}.zip
           path: seek-${{ matrix.rid }}.zip
+          if-no-files-found: error
+
+      - name: Upload raw Windows binary artifact
+        if: runner.os == 'Windows' && (matrix.rid == 'win-x64' || matrix.rid == 'win-arm64')
+        uses: actions/upload-artifact@v6
+        with:
+          name: seek-${{ matrix.rid }}.exe
+          path: seek-${{ matrix.rid }}.exe
           if-no-files-found: error
 
       - name: Upload Sigstore bundle artifact
@@ -416,3 +427,26 @@ jobs:
           for file in release-artifacts/*; do
             gh release upload "${{ needs.metadata.outputs.version }}" "$file" --clobber
           done
+
+  winget-release:
+    needs:
+      - metadata
+      - github-release
+    # winget-releaser updates an existing winget package entry.
+    # Bootstrap the first Seek submission manually, then enable this job by
+    # configuring WINGET_PACKAGE_IDENTIFIER and WINGET_TOKEN.
+    if: ${{ vars.WINGET_PACKAGE_IDENTIFIER != '' }}
+    runs-on: ubuntu-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+
+    steps:
+      - name: Publish GitHub release to WinGet
+        if: ${{ env.WINGET_TOKEN != '' }}
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: ${{ vars.WINGET_PACKAGE_IDENTIFIER }}
+          installers-regex: ${{ env.WINGET_INSTALLERS_REGEX }}
+          release-tag: ${{ needs.metadata.outputs.version }}
+          fork-user: ${{ vars.WINGET_FORK_USER }}
+          token: ${{ env.WINGET_TOKEN }}
