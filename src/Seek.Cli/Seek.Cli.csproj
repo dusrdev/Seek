@@ -33,6 +33,7 @@
   <PropertyGroup>
     <Authors>David Shnayder</Authors>
     <Description>A very fast filesystem searcher</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>find, search, filesystem, fd</PackageTags>
     <PackageIcon>seek-icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
