@@ -22,7 +22,7 @@
     <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
     <InvariantGlobalization>true</InvariantGlobalization>
     <StackTraceSupport>false</StackTraceSupport>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <StripSymbols>true</StripSymbols>
     <RepositoryUrl>https://github.com/dusrdev/Seek</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -48,10 +48,7 @@
 
   <PropertyGroup>
     <PackageReleaseNotes>
-      - Root-relative search output by default, with --absolute and --null for path-safe scripting.
-      - Added seek delete with preview-first behavior and --apply for actual deletion.
-      - Empty-query searches now match all eligible entries instead of hanging.
-      - Native AOT NuGet tool packages for common runtimes, plus a Seek.any fallback package.
+      - No CLI or package behavior changes in this patch release.
     </PackageReleaseNotes>
   </PropertyGroup>
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Updated the shipped `seek-file-search` agent skill to reflect the 1.1.0 CLI behavior, including root-relative output by default, `--absolute`, `--null`, empty-query match-all searches, and `seek delete`.
+
 ## 1.1.0
 
 - Search results are relative to `--root` by default. Use `--absolute` for standalone paths or `--null` for NUL-terminated absolute paths in scripts.

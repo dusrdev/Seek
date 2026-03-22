@@ -12,12 +12,13 @@
 ## Task behavior
 
 - If a requested change needs unknown external source material, ask for it.
-- If public command behavior, install flow, or package semantics change, ask whether to update `README.md` and `CHANGELOG.md`.
+- If public command behavior, install flow, or package semantics change, ask whether to update `README.md`, `CHANGELOG.md`, and `.agents/skills/seek-file-search`.
 - When discussing external dependencies, verify behavior against the exact version in use.
-- When preparing a release or changing release-relevant behavior, keep `CHANGELOG.md` and `src/Seek.Cli/Seek.Cli.csproj` `<PackageReleaseNotes>` in sync.
+- When preparing a release or changing release-relevant behavior, keep `CHANGELOG.md`, `src/Seek.Cli/Seek.Cli.csproj` `<PackageReleaseNotes>`, and `.agents/skills/seek-file-search` in sync when the shipped skill documents affected behavior.
 - Write `CHANGELOG.md` in a human-readable release format aimed at GitHub release readers, not as a raw internal change inventory.
+- `CHANGELOG.md` should only include public-facing changes. Do not include internal repo, process, test, or maintenance-only changes unless they materially affect users.
 - Keep `<PackageReleaseNotes>` simpler and shorter than `CHANGELOG.md`, focused on NuGet users and package-facing changes.
-- If one of `CHANGELOG.md` or `<PackageReleaseNotes>` changes for a release, review the other in the same pass so they do not drift.
+- If one of `CHANGELOG.md`, `<PackageReleaseNotes>`, or `.agents/skills/seek-file-search` changes for a release or CLI behavior update, review the others in the same pass so they do not drift.
 
 ## Current architecture
 
@@ -34,12 +35,14 @@
 
 - The CLI exposes a default search command wired in `Program.cs` via `app.Add("", Commands.SearchAsync)`.
 - The CLI also exposes a named destructive subcommand wired via `app.Add("delete", Commands.DeleteAsync)`.
+- The CLI also exposes a named utility subcommand wired via `app.Add("check-for-updates", Commands.CheckForUpdatesAsync)`.
 - The default command positional argument is the search query.
 - Current arguments and defaults from `Commands.SearchAsync`:
   - `query`: required positional argument.
   - `regex`: defaults to `false`.
   - `caseSensitive`: defaults to `false`.
   - `plain`: defaults to `false`.
+  - `absolute`: defaults to `false`.
   - `null`: defaults to `false`.
   - `hidden`: defaults to `false`.
   - `system`: defaults to `false`.
@@ -66,11 +69,14 @@
   - `-d` => `--directories`
   - `-c` => `--highlight-color`
 - If `plain` is `true`, the CLI writes the full path directly and does not emit PrettyConsole color/escape sequences for match sections.
-- If `null` is `true`, the CLI emits plain NUL-terminated paths and bypasses highlight rendering.
+- If `absolute` is `false`, search output is relative to `root`.
+- If `null` is `true`, the CLI emits plain absolute NUL-terminated paths and bypasses highlight rendering.
 - If both `files` and `directories` are `false`, both result kinds are emitted. If both are `true`, the current behavior is also to emit both result kinds.
+- An empty search query matches all eligible entries under `root`.
 - `seek delete` previews candidates by default, prints absolute candidate paths, and only deletes when `apply` is `true`.
 - `seek delete` collapses descendants under matched directories before preview or apply.
 - `seek delete` deletes sequentially, prints one `SUCCESS` or `FAIL` line per candidate in apply mode, and returns exit code `1` if any deletion fails.
+- `seek check-for-updates` compares `ConsoleApp.Version` against the latest published NuGet package version and prints either update instructions or an up-to-date message.
 - Worker count is not user-configurable today. `FileSystemSearch` computes it as `Math.Max(1, Environment.ProcessorCount - 1)`.
 - Results are rendered to standard output through `PrettyConsole` when highlighting is enabled.
 - Global exception handling preserves validation and argument parse failures, prints cancellations as a non-error, and prints unexpected exception messages in red while setting exit code `1`.
