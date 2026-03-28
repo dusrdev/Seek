@@ -22,7 +22,7 @@
     <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
     <InvariantGlobalization>true</InvariantGlobalization>
     <StackTraceSupport>false</StackTraceSupport>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <StripSymbols>true</StripSymbols>
     <RepositoryUrl>https://github.com/dusrdev/Seek</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -49,7 +49,9 @@
 
   <PropertyGroup>
     <PackageReleaseNotes>
-      - No CLI or package behavior changes in this patch release.
+      - Added WinGet distribution via winget install dusrdev.Seek.
+      - Unified CLI colors and removed --highlight-color.
+      - Added seek delete --no-progress for quieter apply runs.
     </PackageReleaseNotes>
   </PropertyGroup>
 

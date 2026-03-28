@@ -125,6 +125,8 @@ seek delete ".*\\.tmp$" --regex --apply
 
 Without `--apply`, `seek delete` prints the final candidate list and a `No changes were made...` hint. With `--apply`, it deletes each candidate sequentially and prints a `SUCCESS` or `FAIL` status line for each path.
 
+Add `--no-progress` to disable the live progress bar during apply runs.
+
 Other useful options:
 
 - `--case-sensitive`
@@ -134,9 +136,9 @@ Other useful options:
 - `--plain` for plain paths without ANSI escape sequences
 - `--null` for NUL-terminated absolute paths that are safe to pipe into tools like `xargs -0`
 - `seek delete ... --apply` for built-in deletion after preview
+- `seek delete ... --apply --no-progress` for durable status lines without the live progress bar
 - `-h, --hidden` to include hidden files
 - `-s, --system` to include system files
-- `--highlight-color Yellow`
 
 ## Build From Source
 

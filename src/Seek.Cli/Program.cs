@@ -1,7 +1,7 @@
 using ConsoleAppFramework;
 
 using Seek.Cli;
-ConsoleApp.Version = "1.1.1";
+ConsoleApp.Version = "1.2.0";
 
 var app = ConsoleApp.Create();
 app.UseFilter<GlobalExceptionHandler>();

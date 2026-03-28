@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Seek is now available on WinGet via `winget install dusrdev.Seek`.
+- Search, delete, update checks, and CLI errors now use a shared built-in palette for more consistent terminal output.
+- Removed `--highlight-color` in favor of the built-in match-highlight palette.
+- Added `seek delete --no-progress` to suppress the live progress bar during apply runs.
+
 ## 1.1.1
 
 - Updated the shipped `seek-file-search` agent skill to reflect the 1.1.0 CLI behavior, including root-relative output by default, `--absolute`, `--null`, empty-query match-all searches, and `seek delete`.

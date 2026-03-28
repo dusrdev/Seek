@@ -36,6 +36,8 @@ Use `seek` for filesystem path search.
   `seek delete cache --directories`
 - Apply matching deletes:
   `seek delete cache --directories --apply`
+- Apply matching deletes without the live progress bar:
+  `seek delete cache --directories --apply --no-progress`
 
 ## Workflow
 
@@ -59,6 +61,7 @@ Use `seek` for filesystem path search.
 4. For destructive work, preview before apply.
 - Preview with `seek delete ...`
 - Delete only with `seek delete ... --apply`
+- Add `--no-progress` when you want durable status lines without the live progress UI.
 
 ## Guardrails
 
