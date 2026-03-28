@@ -13,10 +13,10 @@ internal sealed class GlobalExceptionHandler(ConsoleAppFilter next) : ConsoleApp
 		} catch (Exception e) when (e is ValidationException or ArgumentParseFailedException) {
 			throw;
 		} catch (Exception e) when (e is TaskCanceledException or OperationCanceledException) {
-			Console.WriteLineInterpolated($"{Color.Yellow}Operation was canceled.");
+			Console.WriteLineInterpolated($"{CliPalette.Warning}Operation was canceled.{Color.Default}");
 			Environment.ExitCode = 0;
 		} catch (Exception exception) {
-			Console.WriteLineInterpolated(OutputPipe.Error, $"{Color.Red}{exception.Message}");
+			Console.WriteLineInterpolated(OutputPipe.Error, $"{CliPalette.Danger}{exception.Message}{Color.Default}");
 			Environment.ExitCode = 1;
 		}
 	}

@@ -26,16 +26,16 @@ internal static partial class Commands {
 		if (nugetVersion > currentVersion) {
 			Console.WriteLineInterpolated(
 				$"""
-				Your version ({Color.Red}{consoleAppVersion}{Color.Default}) is out of date. Version {Color.Green}{nugetVersion}{Color.Default} is available!
+				Your version {CliPalette.Warning}{consoleAppVersion}{Color.Default} is out of date. Version {CliPalette.Success}{nugetVersion}{Color.Default} is available!
 
 				Update from:
-				NUGET  -> {Color.Yellow}dotnet tool update seek{Color.Default}
-				GITHUB -> {Markup.Underline}{Color.Yellow}https://github.com/dusrdev/Seek/releases/latest{Color.Default}{Markup.ResetUnderline}
-				WINGET -> {Color.Yellow}winget update dusrdev.Seek{Color.Default}
+				NUGET  -> {CliPalette.Accent}dotnet tool update seek{Color.Default}
+				GITHUB -> {Markup.Underline}{CliPalette.Accent}https://github.com/dusrdev/Seek/releases/latest{Color.Default}{Markup.ResetUnderline}
+				WINGET -> {CliPalette.Accent}winget update dusrdev.Seek{Color.Default}
 				"""
 				);
 		} else {
-			Console.WriteLineInterpolated($"Your version is up-to-date.");
+			Console.WriteLineInterpolated($"Your version is {CliPalette.Success}up-to-date{Color.Default}.");
 		}
 
 		return 0;

@@ -261,7 +261,6 @@ public sealed class CommandsSearchTests {
             query: "alpha",
             root: sandbox.RootPath,
             @null: true,
-            highlightColor: ConsoleColor.Red,
             cancellationToken: cancellationToken);
 
         await Assert.That(exitCode).IsEqualTo(0);
@@ -320,7 +319,6 @@ public sealed class CommandsSearchTests {
         bool files = false,
         bool directories = false,
         bool absolute = false,
-        ConsoleColor highlightColor = ConsoleColor.Green,
         CancellationToken cancellationToken = default) {
         var output = new StringWriter();
         var originalOut = ConsoleContext.Out;
@@ -340,7 +338,6 @@ public sealed class CommandsSearchTests {
                 files,
                 directories,
                 root,
-                highlightColor,
                 cancellationToken);
 
             return (exitCode, output.ToString());

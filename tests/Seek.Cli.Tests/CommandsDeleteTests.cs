@@ -210,7 +210,7 @@ public sealed class CommandsDeleteTests {
 			await Assert.That(File.Exists(okFilePath)).IsFalse();
 			await Assert.That(Directory.Exists(failDirectoryPath)).IsTrue();
 			await Assert.That(lines.Any(line => line == $"SUCCESS {okFilePath}")).IsTrue();
-			await Assert.That(lines.Any(line => line.StartsWith($"FAIL {failDirectoryPath} - ", StringComparison.Ordinal))).IsTrue();
+			await Assert.That(lines.Any(line => line.StartsWith($"FAIL    {failDirectoryPath} - ", StringComparison.Ordinal))).IsTrue();
 		} finally {
 			File.SetUnixFileMode(lockedParentPath, originalMode);
 		}
@@ -259,6 +259,7 @@ public sealed class CommandsDeleteTests {
 				false,
 				files,
 				directories,
+				true,
 				root,
 				apply,
 				cancellationToken);
