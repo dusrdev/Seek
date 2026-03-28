@@ -27,15 +27,11 @@ A real-world full-path regex benchmark for mp4 paths under the root directory sh
 
 ## Install
 
-From NuGet:
+- winget: `winget install dusrdev.Seek`
+- GitHub: [latest release binaries](https://github.com/dusrdev/Seek/releases/latest)
+- NuGet: `dotnet tool install Seek --global`
 
-```bash
-dotnet tool install --global Seek
-```
-
-On supported runtimes, NuGet will resolve Seek's native AOT runtime package for the current machine automatically. A framework-dependent `Seek.any` fallback package is also published for unsupported or generic environments.
-
-Precompiled binaries are also available in GitHub Releases.
+On supported runtimes, NuGet resolves Seek's native AOT package for the current machine automatically. A framework-dependent `Seek.any` fallback package is also published for unsupported or generic environments.
 
 ## Agent Skill
 
@@ -129,6 +125,8 @@ seek delete ".*\\.tmp$" --regex --apply
 
 Without `--apply`, `seek delete` prints the final candidate list and a `No changes were made...` hint. With `--apply`, it deletes each candidate sequentially and prints a `SUCCESS` or `FAIL` status line for each path.
 
+Add `--no-progress` to disable the live progress bar during apply runs.
+
 Other useful options:
 
 - `--case-sensitive`
@@ -138,9 +136,9 @@ Other useful options:
 - `--plain` for plain paths without ANSI escape sequences
 - `--null` for NUL-terminated absolute paths that are safe to pipe into tools like `xargs -0`
 - `seek delete ... --apply` for built-in deletion after preview
+- `seek delete ... --apply --no-progress` for durable status lines without the live progress bar
 - `-h, --hidden` to include hidden files
 - `-s, --system` to include system files
-- `--highlight-color Yellow`
 
 ## Build From Source
 

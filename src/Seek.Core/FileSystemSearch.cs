@@ -4,11 +4,7 @@ using System.Threading.Channels;
 namespace Seek.Core;
 
 internal sealed class FileSystemSearch {
-#if DEBUG
-    private static readonly int Workers = 1;
-#else
     private static readonly int Workers = Math.Max(1, Environment.ProcessorCount - 1);
-#endif
 
     private readonly EnumerationOptions _directoryEnumerationOptions;
     private readonly string _rootPath;

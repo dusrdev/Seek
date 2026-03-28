@@ -21,7 +21,6 @@ internal static partial class Commands {
 	/// <param name="files">-f, Match only against files</param>
 	/// <param name="directories">-d, Match only against directories</param>
 	/// <param name="root">The root path from which to scan</param>
-	/// <param name="highlightColor">-c, Choose the matching section highlight color</param>
 	/// <param name="cancellationToken"></param>
 	/// <returns></returns>
 	public static async Task<int> SearchAsync(
@@ -36,7 +35,6 @@ internal static partial class Commands {
 		bool files,
 		bool directories,
 		string root = ".",
-		ConsoleColor highlightColor = ConsoleColor.Green,
 		CancellationToken cancellationToken = default) {
 		var search = CreateFileSystemSearch(
 			query,
@@ -49,20 +47,25 @@ internal static partial class Commands {
 			root,
 			cancellationToken);
 
-		Action<SearchMatch, bool, ConsoleColor> outputHandler = (@null, plain) switch {
+		Action<SearchMatch, bool> outputHandler = (@null, plain) switch {
 			(true, _) => WritePlainNullTerminated,
 			(false, true) => WritePlain,
 			_ => WriteRegular
 		};
 
 		await foreach (var searchMatch in search.SearchAsync().ConfigureAwait(false)) {
-			outputHandler(searchMatch, absolute, highlightColor);
+			outputHandler(searchMatch, absolute);
 		}
 
 		return 0;
 	}
 
-	private static void WriteRegular(SearchMatch searchMatch, bool absolute, ConsoleColor highlightColor) {
+	/// <summary>
+	/// Prints a search match with match highlight
+	/// </summary>
+	/// <param name="searchMatch">The <see cref="SearchMatch"/> to print</param>
+	/// <param name="absolute">Whether to print as absolute path</param>
+	internal static void WriteRegular(SearchMatch searchMatch, bool absolute) {
 		ReadOnlySpan<char> path; int offset;
 		if (!absolute) {
 			path = searchMatch.Path.AsSpan(searchMatch.RelativePathOffset);
@@ -75,20 +78,20 @@ internal static partial class Commands {
 		}
 
 		foreach (var range in searchMatch.Sections) {
-			ConsoleColor color = range.IsMatch ? highlightColor : ConsoleColor.DefaultForeground;
+			AnsiToken color = range.IsMatch ? CliPalette.Accent : Color.DefaultForeground;
 			var slice = path.Slice(offset + range.Start, range.Length);
 			Console.WriteInterpolated($"{color}{slice}");
 		}
 		Console.NewLine();
 	}
 
-	private static void WritePlain(SearchMatch searchMatch, bool absolute, ConsoleColor highlightColor) {
+	private static void WritePlain(SearchMatch searchMatch, bool absolute) {
 		var path = !absolute ? searchMatch.Path.AsSpan(searchMatch.RelativePathOffset) : searchMatch.Path.AsSpan();
 
 		Console.WriteLine(path, OutputPipe.Out);
 	}
 
-	private static void WritePlainNullTerminated(SearchMatch searchMatch, bool absolute, ConsoleColor highlightColor) {
+	private static void WritePlainNullTerminated(SearchMatch searchMatch, bool absolute) {
 		var path = searchMatch.Path.AsSpan();
 
 		Console.WriteInterpolated($"{path}\0");

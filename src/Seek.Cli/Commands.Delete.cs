@@ -17,6 +17,7 @@ internal static partial class Commands {
 	/// <param name="system">-s, Include system files and folders</param>
 	/// <param name="files">-f, Match only against files</param>
 	/// <param name="directories">-d, Match only against directories</param>
+	/// <param name="noProgress">Disable progress reporting</param>
 	/// <param name="root">The root path from which to scan</param>
 	/// <param name="apply">Perform the deletion instead of previewing candidates</param>
 	/// <param name="cancellationToken"></param>
@@ -29,6 +30,7 @@ internal static partial class Commands {
 		bool system,
 		bool files,
 		bool directories,
+		bool noProgress,
 		string root = ".",
 		bool apply = false,
 		CancellationToken cancellationToken = default) {
@@ -42,48 +44,62 @@ internal static partial class Commands {
 			directories,
 			root,
 			cancellationToken);
-		var collapsedCandidates = await CollectDeleteCandidatesAsync(search.SearchAsync(), cancellationToken).ConfigureAwait(false);
+		List<SearchMatch> collapsedCandidates = await CollectDeleteCandidatesAsync(search.SearchAsync(), cancellationToken).ConfigureAwait(false);
+
+		if (collapsedCandidates.Count == 0) return 0;
 
 		if (!apply) {
 			foreach (var candidate in collapsedCandidates) {
-				Console.WriteLineInterpolated(OutputPipe.Out, $"{candidate.Path}");
+				WriteRegular(candidate, true);
 			}
 
 			Console.NewLine(OutputPipe.Out);
-			Console.WriteLineInterpolated(OutputPipe.Out, $"{ConsoleColor.Yellow}No changes were made. Re-run with --apply to delete these entries.");
+			Console.WriteLineInterpolated($"No changes were made. Re-run with {Markup.Bold}{CliPalette.Warning}--apply{Color.Default}{Markup.ResetBold} to delete these entries.");
 			return 0;
 		}
 
 		var hadFailure = false;
-		foreach (var candidate in collapsedCandidates) {
+
+		using var region = new LiveConsoleRegion(OutputPipe.Out);
+		int prgLength = CalculateProgressWidth();
+
+		var count = collapsedCandidates.Count;
+		double denominator = (double)count / 100;
+		for (var i = 0; i < count; i++) {
+			SearchMatch candidate = collapsedCandidates[i];
 			try {
 				ApplyDeleteCandidate(candidate);
-				Console.WriteLineInterpolated(OutputPipe.Out, $"{ConsoleColor.Green}SUCCESS{ConsoleColor.DefaultForeground} {candidate.Path}");
+				region.WriteLine($"{CliPalette.Success}OK{Color.Default}   {candidate.Path}");
 			} catch (Exception exception) when (exception is not OperationCanceledException) {
 				hadFailure = true;
-				Console.WriteLineInterpolated(OutputPipe.Out, $"{ConsoleColor.Red}FAIL{ConsoleColor.DefaultForeground} {candidate.Path} - {exception.Message}");
+				region.WriteLine($"{CliPalette.Danger}FAIL{Color.Default} {candidate.Path} - {exception.Message}");
+			}
+			if (!noProgress) {
+				region.RenderProgress(i / denominator, (builder, out handler) => {
+					handler = builder.Build($"Deleting {i} / {count}");
+				}, progressColor: CliPalette.Accent, maxLineWidth: prgLength);
 			}
 		}
 
 		return hadFailure ? 1 : 0;
 	}
 
-	private static async Task<List<DeleteCandidate>> CollectDeleteCandidatesAsync(
+	private static async Task<List<SearchMatch>> CollectDeleteCandidatesAsync(
 		IAsyncEnumerable<SearchMatch> matches,
 		CancellationToken cancellationToken) {
-		List<DeleteCandidate> candidates = [];
+		List<SearchMatch> candidates = [];
 
 		await foreach (var searchMatch in matches.WithCancellation(cancellationToken).ConfigureAwait(false)) {
-			candidates.Add(new DeleteCandidate(searchMatch.Path, searchMatch.IsDirectory));
+			candidates.Add(searchMatch);
 		}
 
 		return CollapseDescendantCandidates(candidates);
 	}
 
-	private static List<DeleteCandidate> CollapseDescendantCandidates(List<DeleteCandidate> candidates) {
+	private static List<SearchMatch> CollapseDescendantCandidates(List<SearchMatch> candidates) {
 		candidates.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Path, right.Path));
 
-		List<DeleteCandidate> collapsedCandidates = [];
+		List<SearchMatch> collapsedCandidates = [];
 		List<string> retainedDirectories = [];
 
 		foreach (var candidate in candidates) {
@@ -116,7 +132,15 @@ internal static partial class Commands {
 		return separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar;
 	}
 
-	private static void ApplyDeleteCandidate(DeleteCandidate candidate) {
+	private static int CalculateProgressWidth() {
+		try {
+			return (int)(Console.BufferWidth * 0.6);
+		} catch {
+			return 60;
+		}
+	}
+
+	private static void ApplyDeleteCandidate(SearchMatch candidate) {
 		if (candidate.IsDirectory) {
 			Directory.Delete(candidate.Path, recursive: true);
 			return;
@@ -124,6 +148,4 @@ internal static partial class Commands {
 
 		File.Delete(candidate.Path);
 	}
-
-	private readonly record struct DeleteCandidate(string Path, bool IsDirectory);
 }

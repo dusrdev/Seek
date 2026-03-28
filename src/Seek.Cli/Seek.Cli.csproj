@@ -22,7 +22,7 @@
     <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
     <InvariantGlobalization>true</InvariantGlobalization>
     <StackTraceSupport>false</StackTraceSupport>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <StripSymbols>true</StripSymbols>
     <RepositoryUrl>https://github.com/dusrdev/Seek</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -49,7 +49,9 @@
 
   <PropertyGroup>
     <PackageReleaseNotes>
-      - No CLI or package behavior changes in this patch release.
+      - Added WinGet distribution via winget install dusrdev.Seek.
+      - Unified CLI colors and removed --highlight-color.
+      - Added seek delete --no-progress for quieter apply runs.
     </PackageReleaseNotes>
   </PropertyGroup>
 
@@ -75,18 +77,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="PrettyConsole" Version="5.4.2" />
+    <PackageReference Include="PrettyConsole" Version="6.0.0" />
   </ItemGroup>
 
-  <Target Name="ExcludeAotSymbolsFromToolPackages"
-          AfterTargets="PackTool"
-          Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
+  <Target Name="ExcludeAotSymbolsFromToolPackages" AfterTargets="PackTool" Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
     <ItemGroup>
-      <_AotToolSymbolPackageFiles Include="@(TfmSpecificPackageFile)"
-                                  Condition="$([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.pdb'))
-                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.dbg'))
-                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM/'))
-                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM\\'))" />
+      <_AotToolSymbolPackageFiles Include="@(TfmSpecificPackageFile)" Condition="$([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.pdb'))&#xA;                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.dbg'))&#xA;                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM/'))&#xA;                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM\\'))" />
       <TfmSpecificPackageFile Remove="@(_AotToolSymbolPackageFiles)" />
     </ItemGroup>
   </Target>

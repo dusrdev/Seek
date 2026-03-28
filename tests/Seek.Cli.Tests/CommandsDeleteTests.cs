@@ -92,7 +92,7 @@ public sealed class CommandsDeleteTests {
 		await Assert.That(exitCode).IsEqualTo(0);
 		await Assert.That(File.Exists(filePath)).IsFalse();
 		await Assert.That(lines.Length).IsEqualTo(1);
-		await Assert.That(lines[0]).IsEqualTo($"SUCCESS {filePath}");
+		await Assert.That(lines[0]).IsEqualTo($"OK   {filePath}");
 	}
 
 	[Test]
@@ -114,7 +114,7 @@ public sealed class CommandsDeleteTests {
 		await Assert.That(exitCode).IsEqualTo(0);
 		await Assert.That(Directory.Exists(directoryPath)).IsFalse();
 		await Assert.That(lines.Length).IsEqualTo(1);
-		await Assert.That(lines[0]).IsEqualTo($"SUCCESS {directoryPath}");
+		await Assert.That(lines[0]).IsEqualTo($"OK   {directoryPath}");
 	}
 
 	[Test]
@@ -171,7 +171,7 @@ public sealed class CommandsDeleteTests {
 			await Assert.That(exitCode).IsEqualTo(1);
 			await Assert.That(File.Exists(okFilePath)).IsFalse();
 			await Assert.That(File.Exists(failFilePath)).IsTrue();
-			await Assert.That(lines.Any(line => line == $"SUCCESS {okFilePath}")).IsTrue();
+			await Assert.That(lines.Any(line => line == $"OK   {okFilePath}")).IsTrue();
 			await Assert.That(lines.Any(line => line.StartsWith($"FAIL {failFilePath} - ", StringComparison.Ordinal))).IsTrue();
 		} finally {
 			if (File.Exists(failFilePath)) {
@@ -209,7 +209,7 @@ public sealed class CommandsDeleteTests {
 			await Assert.That(exitCode).IsEqualTo(1);
 			await Assert.That(File.Exists(okFilePath)).IsFalse();
 			await Assert.That(Directory.Exists(failDirectoryPath)).IsTrue();
-			await Assert.That(lines.Any(line => line == $"SUCCESS {okFilePath}")).IsTrue();
+			await Assert.That(lines.Any(line => line == $"OK   {okFilePath}")).IsTrue();
 			await Assert.That(lines.Any(line => line.StartsWith($"FAIL {failDirectoryPath} - ", StringComparison.Ordinal))).IsTrue();
 		} finally {
 			File.SetUnixFileMode(lockedParentPath, originalMode);
@@ -252,16 +252,17 @@ public sealed class CommandsDeleteTests {
 			ConsoleContext.Out = output;
 
 			var exitCode = await Commands.DeleteAsync(
-				query,
-				regex,
-				false,
-				false,
-				false,
-				files,
-				directories,
-				root,
-				apply,
-				cancellationToken);
+				query: query,
+				regex: regex,
+				caseSensitive: false,
+				hidden: false,
+				system: false,
+				files: files,
+				directories: directories,
+				noProgress: true,
+				root: root,
+				apply: apply,
+				cancellationToken: cancellationToken);
 
 			return (exitCode, output.ToString());
 		} finally {
