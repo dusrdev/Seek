@@ -15,7 +15,7 @@ internal static class CliPalette {
 	/// <summary>
 	/// Accent color for match highlights and actionable update/install commands.
 	/// </summary>
-	public static readonly AnsiToken Accent = Color.Cyan;
+	public static readonly AnsiToken Accent = Color.Magenta;
 
 	/// <summary>
 	/// Positive outcome color for successful operations and healthy state.
@@ -23,7 +23,7 @@ internal static class CliPalette {
 	public static readonly AnsiToken Success = Color.Green;
 
 	/// <summary>
-	/// Caution color for previews, progress, and non-error interruption messages.
+	/// Caution color for previews, apply hints, and stale state.
 	/// </summary>
 	public static readonly AnsiToken Warning = Color.Yellow;
 

@@ -77,7 +77,7 @@ internal static partial class Commands {
 			if (!noProgress) {
 				region.RenderProgress(i / denominator, (builder, out handler) => {
 					handler = builder.Build($"Deleting {i} / {count}");
-				}, progressColor: CliPalette.Warning, maxLineWidth: prgLength);
+				}, progressColor: CliPalette.Accent, maxLineWidth: prgLength);
 			}
 		}
 

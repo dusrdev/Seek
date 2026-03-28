@@ -35,7 +35,7 @@ internal static partial class Commands {
 				"""
 				);
 		} else {
-			Console.WriteLineInterpolated($"Your version is {CliPalette.Success}up-to-date{Color.Default}.");
+			Console.WriteLineInterpolated($"Your version is up-to-date.");
 		}
 
 		return 0;
