@@ -61,7 +61,7 @@ internal static partial class Commands {
 		var hadFailure = false;
 
 		using var region = new LiveConsoleRegion(OutputPipe.Out);
-		int prgLength = (int)(Console.BufferWidth * 0.6);
+		int prgLength = CalculateProgressWidth();
 
 		var count = collapsedCandidates.Count;
 		double denominator = (double)count / 100;
@@ -130,6 +130,14 @@ internal static partial class Commands {
 
 		var separator = path[directoryPath.Length];
 		return separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar;
+	}
+
+	private static int CalculateProgressWidth() {
+		try {
+			return (int)(Console.BufferWidth * 0.6);
+		} catch {
+			return 60;
+		}
 	}
 
 	private static void ApplyDeleteCandidate(SearchMatch candidate) {
