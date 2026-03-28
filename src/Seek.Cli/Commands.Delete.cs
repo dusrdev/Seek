@@ -69,10 +69,10 @@ internal static partial class Commands {
 			SearchMatch candidate = collapsedCandidates[i];
 			try {
 				ApplyDeleteCandidate(candidate);
-				region.WriteLine($"{CliPalette.Success}SUCCESS{Color.Default} {candidate.Path}");
+				region.WriteLine($"{CliPalette.Success}OK{Color.Default}   {candidate.Path}");
 			} catch (Exception exception) when (exception is not OperationCanceledException) {
 				hadFailure = true;
-				region.WriteLine($"{CliPalette.Danger}FAIL{Color.Default}{new WhiteSpace(3)} {candidate.Path} - {exception.Message}");
+				region.WriteLine($"{CliPalette.Danger}FAIL{Color.Default} {candidate.Path} - {exception.Message}");
 			}
 			if (!noProgress) {
 				region.RenderProgress(i / denominator, (builder, out handler) => {
