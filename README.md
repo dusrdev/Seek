@@ -27,15 +27,11 @@ A real-world full-path regex benchmark for mp4 paths under the root directory sh
 
 ## Install
 
-From NuGet:
+- winget: `winget install dusrdev.Seek`
+- GitHub: [latest release binaries](https://github.com/dusrdev/Seek/releases/latest)
+- NuGet: `dotnet tool install Seek --global`
 
-```bash
-dotnet tool install --global Seek
-```
-
-On supported runtimes, NuGet will resolve Seek's native AOT runtime package for the current machine automatically. A framework-dependent `Seek.any` fallback package is also published for unsupported or generic environments.
-
-Precompiled binaries are also available in GitHub Releases.
+On supported runtimes, NuGet resolves Seek's native AOT package for the current machine automatically. A framework-dependent `Seek.any` fallback package is also published for unsupported or generic environments.
 
 ## Agent Skill
 

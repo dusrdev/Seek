@@ -28,13 +28,10 @@ internal static partial class Commands {
 				$"""
 				Your version ({Color.Red}{consoleAppVersion}{Color.Default}) is out of date. Version {Color.Green}{nugetVersion}{Color.Default} is available!
 
-				Update from Nuget:
-				{Color.Yellow}dotnet tool update seek{Color.Default}
-				or
-				{Color.Yellow}dotnet tool update --global seek{Color.Default} (if installed globally)
-
-				Download from GitHub releases:
-				{Markup.Underline}{Color.Yellow}https://github.com/dusrdev/Seek/releases/latest{Color.Default}{Markup.ResetUnderline}
+				Update from:
+				NUGET  -> {Color.Yellow}dotnet tool update seek{Color.Default}
+				GITHUB -> {Markup.Underline}{Color.Yellow}https://github.com/dusrdev/Seek/releases/latest{Color.Default}{Markup.ResetUnderline}
+				WINGET -> {Color.Yellow}winget update dusrdev.Seek{Color.Default}
 				"""
 				);
 		} else {
