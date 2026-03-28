@@ -50,7 +50,7 @@ internal static partial class Commands {
 			}
 
 			Console.NewLine(OutputPipe.Out);
-			Console.WriteLineInterpolated(OutputPipe.Out, $"{ConsoleColor.Yellow}No changes were made. Re-run with --apply to delete these entries.");
+			Console.WriteLineInterpolated(OutputPipe.Out, $"{Color.Yellow}No changes were made. Re-run with --apply to delete these entries.");
 			return 0;
 		}
 
@@ -58,10 +58,10 @@ internal static partial class Commands {
 		foreach (var candidate in collapsedCandidates) {
 			try {
 				ApplyDeleteCandidate(candidate);
-				Console.WriteLineInterpolated(OutputPipe.Out, $"{ConsoleColor.Green}SUCCESS{ConsoleColor.DefaultForeground} {candidate.Path}");
+				Console.WriteLineInterpolated(OutputPipe.Out, $"{Color.Green}SUCCESS{Color.Default} {candidate.Path}");
 			} catch (Exception exception) when (exception is not OperationCanceledException) {
 				hadFailure = true;
-				Console.WriteLineInterpolated(OutputPipe.Out, $"{ConsoleColor.Red}FAIL{ConsoleColor.DefaultForeground} {candidate.Path} - {exception.Message}");
+				Console.WriteLineInterpolated(OutputPipe.Out, $"{Color.Red}FAIL{Color.Default} {candidate.Path} - {exception.Message}");
 			}
 		}
 

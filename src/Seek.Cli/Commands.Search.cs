@@ -75,7 +75,7 @@ internal static partial class Commands {
 		}
 
 		foreach (var range in searchMatch.Sections) {
-			ConsoleColor color = range.IsMatch ? highlightColor : ConsoleColor.DefaultForeground;
+			AnsiToken color = range.IsMatch ? highlightColor : ConsoleColor.DefaultForeground;
 			var slice = path.Slice(offset + range.Start, range.Length);
 			Console.WriteInterpolated($"{color}{slice}");
 		}

@@ -75,18 +75,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="PrettyConsole" Version="5.4.2" />
+    <PackageReference Include="PrettyConsole" Version="6.0.0" />
   </ItemGroup>
 
-  <Target Name="ExcludeAotSymbolsFromToolPackages"
-          AfterTargets="PackTool"
-          Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
+  <Target Name="ExcludeAotSymbolsFromToolPackages" AfterTargets="PackTool" Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
     <ItemGroup>
-      <_AotToolSymbolPackageFiles Include="@(TfmSpecificPackageFile)"
-                                  Condition="$([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.pdb'))
-                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.dbg'))
-                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM/'))
-                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM\\'))" />
+      <_AotToolSymbolPackageFiles Include="@(TfmSpecificPackageFile)" Condition="$([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.pdb'))&#xA;                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').EndsWith('.dbg'))&#xA;                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM/'))&#xA;                                    or $([System.String]::Copy('%(TfmSpecificPackageFile.Identity)').Contains('.dSYM\\'))" />
       <TfmSpecificPackageFile Remove="@(_AotToolSymbolPackageFiles)" />
     </ItemGroup>
   </Target>

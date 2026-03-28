@@ -26,15 +26,15 @@ internal static partial class Commands {
 		if (nugetVersion > currentVersion) {
 			Console.WriteLineInterpolated(
 				$"""
-				Your version ({ConsoleColor.Red}{consoleAppVersion}{ConsoleColor.DefaultForeground}) is out of date. Version {ConsoleColor.Green}{nugetVersion}{ConsoleColor.DefaultForeground} is available!
+				Your version ({Color.Red}{consoleAppVersion}{Color.Default}) is out of date. Version {Color.Green}{nugetVersion}{Color.Default} is available!
 
 				Update from Nuget:
-				{ConsoleColor.Yellow}dotnet tool update seek{ConsoleColor.Default}
+				{Color.Yellow}dotnet tool update seek{Color.Default}
 				or
-				{ConsoleColor.Yellow}dotnet tool update --global seek{ConsoleColor.DefaultForeground} (if installed globally)
+				{Color.Yellow}dotnet tool update --global seek{Color.Default} (if installed globally)
 
 				Download from GitHub releases:
-				{Markup.Underline}{ConsoleColor.Yellow}https://github.com/dusrdev/Seek/releases/latest{ConsoleColor.DefaultForeground}{Markup.ResetUnderline}
+				{Markup.Underline}{Color.Yellow}https://github.com/dusrdev/Seek/releases/latest{Color.Default}{Markup.ResetUnderline}
 				"""
 				);
 		} else {
