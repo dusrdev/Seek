@@ -73,12 +73,14 @@
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\assets\seek-icon.png" Pack="true" PackagePath="seek-icon.png" />
-    <PackageReference Include="ConsoleAppFramework" Version="5.7.13">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Analyzer Include="assets/ConsoleAppFramework.dll"/>
     <PackageReference Include="PrettyConsole" Version="6.0.0" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>obj/generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
 
   <Target Name="ExcludeAotSymbolsFromToolPackages" AfterTargets="PackTool" Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
     <ItemGroup>

@@ -8,43 +8,30 @@ namespace Seek.Cli;
 
 internal static partial class Commands {
 	/// <summary>
-	/// Seek is a fast filesystem search tool for files and directories by David Shnayder (@dusrdev).
+	/// Seek is a fast filesystem searcher made by David Shnayder (@dusrdev).
+	///
+	/// Search the filesystem for a query
 	/// </summary>
-	/// <param name="query">Search query</param>
-	/// <param name="regex">-r, Treat the query as regex pattern</param>
-	/// <param name="caseSensitive">Perform a case sensitive search</param>
 	/// <param name="plain">-p, Disable matching section highlight</param>
 	/// <param name="absolute">Emit absolute paths instead of paths relative to the selected root</param>
 	/// <param name="null">Emit machine-readable NUL-terminated paths for safe piping, implies --plain and --absolute</param>
-	/// <param name="hidden">-h, Include hidden files and folders</param>
-	/// <param name="system">-s, Include system files and folders</param>
-	/// <param name="files">-f, Match only against files</param>
-	/// <param name="directories">-d, Match only against directories</param>
-	/// <param name="root">The root path from which to scan</param>
 	/// <param name="cancellationToken"></param>
 	/// <returns></returns>
 	public static async Task<int> SearchAsync(
-		[Argument] string query,
-		bool regex,
-		bool caseSensitive,
+		[AsParameters] SearchParameters @params,
 		bool plain,
 		bool absolute,
 		bool @null,
-		bool hidden,
-		bool system,
-		bool files,
-		bool directories,
-		string root = ".",
 		CancellationToken cancellationToken = default) {
 		var search = CreateFileSystemSearch(
-			query,
-			regex,
-			caseSensitive,
-			hidden,
-			system,
-			files,
-			directories,
-			root,
+			@params.Query,
+			@params.Regex,
+			@params.CaseSensitive,
+			@params.Hidden,
+			@params.System,
+			@params.Files,
+			@params.Directories,
+			@params.Root,
 			cancellationToken);
 
 		Action<SearchMatch, bool> outputHandler = (@null, plain) switch {

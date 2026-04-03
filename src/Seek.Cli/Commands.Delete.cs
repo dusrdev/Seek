@@ -10,39 +10,23 @@ internal static partial class Commands {
 	/// <summary>
 	/// Delete matching files and directories.
 	/// </summary>
-	/// <param name="query">Search query</param>
-	/// <param name="regex">-r, Treat the query as regex pattern</param>
-	/// <param name="caseSensitive">Perform a case sensitive search</param>
-	/// <param name="hidden">-h, Include hidden files and folders</param>
-	/// <param name="system">-s, Include system files and folders</param>
-	/// <param name="files">-f, Match only against files</param>
-	/// <param name="directories">-d, Match only against directories</param>
 	/// <param name="noProgress">Disable progress reporting</param>
-	/// <param name="root">The root path from which to scan</param>
 	/// <param name="apply">Perform the deletion instead of previewing candidates</param>
 	/// <param name="cancellationToken"></param>
 	/// <returns></returns>
-	public static async Task<int> DeleteAsync(
-		[Argument] string query,
-		bool regex,
-		bool caseSensitive,
-		bool hidden,
-		bool system,
-		bool files,
-		bool directories,
+	public static async Task<int> DeleteAsync([AsParameters] SearchParameters @params,
 		bool noProgress,
-		string root = ".",
-		bool apply = false,
+		bool apply,
 		CancellationToken cancellationToken = default) {
 		var search = CreateFileSystemSearch(
-			query,
-			regex,
-			caseSensitive,
-			hidden,
-			system,
-			files,
-			directories,
-			root,
+			@params.Query,
+			@params.Regex,
+			@params.CaseSensitive,
+			@params.Hidden,
+			@params.System,
+			@params.Files,
+			@params.Directories,
+			@params.Root,
 			cancellationToken);
 		List<SearchMatch> collapsedCandidates = await CollectDeleteCandidatesAsync(search.SearchAsync(), cancellationToken).ConfigureAwait(false);
 
