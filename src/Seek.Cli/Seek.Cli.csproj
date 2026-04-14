@@ -74,7 +74,7 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\assets\seek-icon.png" Pack="true" PackagePath="seek-icon.png" />
     <Analyzer Include="assets/ConsoleAppFramework.dll"/>
-    <PackageReference Include="PrettyConsole" Version="6.0.0" />
+    <PackageReference Include="PrettyConsole" Version="6.0.1" />
   </ItemGroup>
 
   <PropertyGroup>
