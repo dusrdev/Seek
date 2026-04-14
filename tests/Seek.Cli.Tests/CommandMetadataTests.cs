@@ -8,7 +8,7 @@ public sealed class CommandMetadataTests {
 			cancellationToken);
 
 		await Assert.That(searchCommandContents.Contains(
-			"Seek is a fast filesystem search tool for files and directories by David Shnayder (@dusrdev).",
+			"Seek is a fast filesystem searcher made by David Shnayder (@dusrdev).",
 			StringComparison.Ordinal)).IsTrue();
 	}
 

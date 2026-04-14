@@ -8,7 +8,7 @@
 
 ```bash
 dotnet build Seek.slnx
-dotnet test Seek.slnx
+dotnet test --solution Seek.slnx
 ```
 
 ## Local CLI usage

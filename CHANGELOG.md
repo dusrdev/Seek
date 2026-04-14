@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Refreshed Seek's CLI framework integration and console dependency stack without changing the command surface or output contracts.
+
 ## 1.2.0
 
 - Seek is now available on WinGet via `winget install dusrdev.Seek`.
