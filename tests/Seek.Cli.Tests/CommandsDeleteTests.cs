@@ -252,15 +252,16 @@ public sealed class CommandsDeleteTests {
 			ConsoleContext.Out = output;
 
 			var exitCode = await Commands.DeleteAsync(
-				query: query,
-				regex: regex,
-				caseSensitive: false,
-				hidden: false,
-				system: false,
-				files: files,
-				directories: directories,
+				new SearchParameters(
+					Query: query,
+					Regex: regex,
+					CaseSensitive: false,
+					Hidden: false,
+					System: false,
+					Files: files,
+					Directories: directories,
+					Root: root),
 				noProgress: true,
-				root: root,
 				apply: apply,
 				cancellationToken: cancellationToken);
 

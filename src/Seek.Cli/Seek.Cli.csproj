@@ -22,7 +22,7 @@
     <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
     <InvariantGlobalization>true</InvariantGlobalization>
     <StackTraceSupport>false</StackTraceSupport>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <StripSymbols>true</StripSymbols>
     <RepositoryUrl>https://github.com/dusrdev/Seek</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -49,9 +49,8 @@
 
   <PropertyGroup>
     <PackageReleaseNotes>
-      - Added WinGet distribution via winget install dusrdev.Seek.
-      - Unified CLI colors and removed --highlight-color.
-      - Added seek delete --no-progress for quieter apply runs.
+      - Maintenance release for the CLI framework and console stack.
+      - No intentional CLI flag or output-contract changes.
     </PackageReleaseNotes>
   </PropertyGroup>
 
@@ -73,12 +72,14 @@
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\assets\seek-icon.png" Pack="true" PackagePath="seek-icon.png" />
-    <PackageReference Include="ConsoleAppFramework" Version="5.7.13">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="PrettyConsole" Version="6.0.0" />
+    <Analyzer Include="assets/ConsoleAppFramework.dll"/>
+    <PackageReference Include="PrettyConsole" Version="6.0.1" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>obj/generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
 
   <Target Name="ExcludeAotSymbolsFromToolPackages" AfterTargets="PackTool" Condition="'$(PackAsTool)' == 'true' and '$(PublishAot)' == 'true'">
     <ItemGroup>

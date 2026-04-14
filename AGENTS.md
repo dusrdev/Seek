@@ -49,7 +49,6 @@
   - `files`: defaults to `false`.
   - `directories`: defaults to `false`.
   - `root`: defaults to `"."`.
-  - `highlightColor`: defaults to `ConsoleColor.Green`.
 - Current arguments and defaults from `Commands.DeleteAsync`:
   - `query`: required positional argument.
   - `regex`: defaults to `false`.
@@ -59,6 +58,7 @@
   - `files`: defaults to `false`.
   - `directories`: defaults to `false`.
   - `root`: defaults to `"."`.
+  - `noProgress`: defaults to `false`.
   - `apply`: defaults to `false`.
 - Short aliases currently exposed by the command surface:
   - `-r` => `--regex`
@@ -67,7 +67,6 @@
   - `-s` => `--system`
   - `-f` => `--files`
   - `-d` => `--directories`
-  - `-c` => `--highlight-color`
 - If `plain` is `true`, the CLI writes the full path directly and does not emit PrettyConsole color/escape sequences for match sections.
 - If `absolute` is `false`, search output is relative to `root`.
 - If `null` is `true`, the CLI emits plain absolute NUL-terminated paths and bypasses highlight rendering.
@@ -75,7 +74,7 @@
 - An empty search query matches all eligible entries under `root`.
 - `seek delete` previews candidates by default, prints absolute candidate paths, and only deletes when `apply` is `true`.
 - `seek delete` collapses descendants under matched directories before preview or apply.
-- `seek delete` deletes sequentially, prints one `SUCCESS` or `FAIL` line per candidate in apply mode, and returns exit code `1` if any deletion fails.
+- `seek delete` deletes sequentially, prints one `OK` or `FAIL` line per candidate in apply mode, and returns exit code `1` if any deletion fails.
 - `seek check-for-updates` compares `ConsoleApp.Version` against the latest published NuGet package version and prints either update instructions or an up-to-date message.
 - Worker count is not user-configurable today. `FileSystemSearch` computes it as `Math.Max(1, Environment.ProcessorCount - 1)`.
 - Results are rendered to standard output through `PrettyConsole` when highlighting is enabled.
@@ -137,7 +136,7 @@
 - AOT compatibility is enforced in project metadata via `IsAotCompatible` and `VerifyReferenceAotCompatibility`.
 - Optional strong-name signing for the CLI assembly is enabled by passing `StrongNameKeyPath` at build or pack time.
 - Package identity is `Seek`.
-- Tool packages are published for `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `any` via `ToolPackageRuntimeIdentifiers`.
+- Tool packages are published for `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `any` via `ToolPackageRuntimeIdentifiers`.
 - The package embeds:
   - the repository `README.md` as package readme
   - `assets/seek-icon.png` as package icon, packed to `seek-icon.png`

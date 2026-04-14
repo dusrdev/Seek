@@ -123,7 +123,7 @@ seek delete ".*\\.tmp$" --regex --apply
 
 `seek delete` uses the same search-selection options as the default search command: `--regex`, `--case-sensitive`, `--hidden`, `--system`, `--files`, `--directories`, and `--root`.
 
-Without `--apply`, `seek delete` prints the final candidate list and a `No changes were made...` hint. With `--apply`, it deletes each candidate sequentially and prints a `SUCCESS` or `FAIL` status line for each path.
+Without `--apply`, `seek delete` prints the final candidate list and a `No changes were made...` hint. With `--apply`, it deletes each candidate sequentially and prints an `OK` or `FAIL` status line for each path.
 
 Add `--no-progress` to disable the live progress bar during apply runs.
 
@@ -144,4 +144,5 @@ Other useful options:
 
 ```bash
 dotnet build Seek.slnx
+dotnet test --solution Seek.slnx
 ```

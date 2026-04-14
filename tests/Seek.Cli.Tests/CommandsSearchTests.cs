@@ -327,17 +327,18 @@ public sealed class CommandsSearchTests {
             ConsoleContext.Out = output;
 
             var exitCode = await Commands.SearchAsync(
-                query,
-                regex,
-                false,
-                noHighlight,
-                absolute,
-                @null,
-                false,
-                false,
-                files,
-                directories,
-                root,
+                new SearchParameters(
+                    Query: query,
+                    Regex: regex,
+                    CaseSensitive: false,
+                    Hidden: false,
+                    System: false,
+                    Files: files,
+                    Directories: directories,
+                    Root: root),
+                plain: noHighlight,
+                absolute: absolute,
+                @null: @null,
                 cancellationToken);
 
             return (exitCode, output.ToString());
